@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <util/atomic.h>
+#include "ac.h"
 #include "ccl.h"
 #include "hal_ln.h"
 #include "ln_def.h"
@@ -395,10 +396,15 @@ lnpacket_t *hal_ln_receive(void)
 
 void hal_ln_init(void)
 {
+    // Init analog comparator and configurable logic
+    ac_init();
+    ccl_init();
+
     // Init USART pins
     PORTA.DIRCLR = PIN1_bm;     // RX input
     PORTA.OUTCLR = PIN4_bm;
     PORTA.DIRSET = PIN4_bm;     // TX active (manual XDIR pin with less delay)
+
     // Init USART
     USART0.CTRLA = USART_RXCIE_bm | USART_RS485_DISABLE_gc; // Enable rx complete interrupt
     USART0.CTRLC = USART_CMODE_ASYNCHRONOUS_gc | USART_PMODE_DISABLED_gc | USART_SBMODE_1BIT_gc | USART_CHSIZE_8BIT_gc;
@@ -407,6 +413,7 @@ void hal_ln_init(void)
     USART0.EVCTRL = 0;
     USART0.STATUS = USART_RXCIF_bm | USART_TXCIF_bm;    // Clear interrupt flags
     USART0.CTRLB = USART_RXEN_bm | USART_TXEN_bm | USART_RXMODE_NORMAL_gc;
+
     // Init LN packet list
     for (uint8_t i = 0; i < LNPACKET_CNT; i++)
         freepacket[i] = &packets[i];
