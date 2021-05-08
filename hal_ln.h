@@ -20,7 +20,7 @@ extern uint8_t      hal_ln_packet_len(const lnpacket_t *packet);
 
 extern void         hal_ln_init(void);
 extern void         hal_ln_update(void);
-extern void         hal_ln_send(lnpacket_t *packet);
+extern void         hal_ln_send(lnpacket_t *lnpacket);
 extern lnpacket_t  *hal_ln_receive(void);
 
 extern const __flash char cmdln_name[];

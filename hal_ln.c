@@ -15,6 +15,7 @@
 #include <util/atomic.h>
 #include "ac.h"
 #include "ccl.h"
+#include "fifo.h"
 #include "hal_ln.h"
 #include "ln_def.h"
 
@@ -51,44 +52,51 @@ static stat_t           stat;
 
 #define LNPACKET_CNT    8
 
-static lnpacket_t   packets[LNPACKET_CNT];
-static lnpacket_t  *freepacket[LNPACKET_CNT];
-static uint8_t      freepackets;
-
-static inline __attribute__((always_inline)) lnpacket_t *packet_get_irq(void)
+typedef struct
 {
-    lnpacket_t *p;
+    fifo_t      fifo;
+    // cb_t    *cb;     // TODO: Callback when packet is sent
+    // void    *ctx;
+    lnpacket_t  lndata;
+} packet_t;
 
-    if (freepackets > 0)
-        p = freepacket[--freepackets];
-    else
-        p = NULL;
-    return p;
-}
+#define PACKET_FROM_FIFO(x) ((packet_t *)((uint8_t *)(x) - offsetof(packet_t, fifo)))
+#define PACKET_FROM_LN(x) ((packet_t *)((uint8_t *)(x) - offsetof(packet_t, lndata)))
 
-static inline __attribute__((always_inline)) void packet_free_irq(lnpacket_t *p)
+static packet_t     packets[LNPACKET_CNT];
+
+static fifo_queue_t queue_free = {NULL, NULL};
+static fifo_queue_t queue_rx = {NULL, NULL};
+static fifo_queue_t queue_tx = {NULL, NULL};
+static fifo_queue_t queue_done = {NULL, NULL};
+
+
+static inline __attribute__((always_inline)) packet_t *packet_get_irq(void)
 {
-    if (freepackets < LNPACKET_CNT)
-        freepacket[freepackets++] = p;
+    fifo_t *p;
+
+    p = fifo_queue_get_irq(&queue_free);
+    if (p)
+        return PACKET_FROM_FIFO(p);
+    return NULL;
 }
 
 lnpacket_t *hal_ln_packet_get(void)
 {
-    lnpacket_t *p;
+    fifo_t *p;
 
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-    {
-        p = packet_get_irq();
-    }
-    return p;
+    p = fifo_queue_get(&queue_free);
+    if (p)
+        return &PACKET_FROM_FIFO(p)->lndata;
+    return NULL;
 }
 
 void hal_ln_packet_free(lnpacket_t *p)
 {
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-    {
-        packet_free_irq(p);
-    }
+    packet_t *packet;
+
+    packet = PACKET_FROM_LN(p);
+    fifo_queue_put(&queue_free, &packet->fifo);
 }
 
 #define PACK_LEN(p)             \
@@ -122,19 +130,16 @@ static inline __attribute__((always_inline)) uint8_t packet_len_irq(const lnpack
 /**************/
 /* TX section */
 
-static lnpacket_t      *tx_buf = NULL;
+static packet_t        *tx_buf = NULL;
 static uint8_t          tx_len;
 static uint8_t          tx_idx;
 static uint16_t         tx_delay;
-
-static lnpacket_t      *tx_queue[LNPACKET_CNT];
-static uint8_t          txq_cnt = 0;
 
 static inline __attribute__((always_inline)) void tx_start(void)
 {
     ccl_collision_clear();
     PORTA.OUTSET = PIN4_bm;             // XDIR = 1
-    USART0.TXDATAL = tx_buf->raw[0];
+    USART0.TXDATAL = tx_buf->lndata.raw[0];
     tx_idx = 1;
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
@@ -164,7 +169,7 @@ ISR(USART0_DRE_vect)
 {
     if (!ccl_collision())
     {
-        USART0.TXDATAL = tx_buf->raw[tx_idx++];
+        USART0.TXDATAL = tx_buf->lndata.raw[tx_idx++];
         if (tx_idx < tx_len)
             return;
     }
@@ -200,7 +205,7 @@ ISR(USART0_TXC_vect)
     }
     else
     {
-        packet_free_irq(tx_buf);
+        fifo_queue_put_irq(&queue_done, &tx_buf->fifo);
         tx_buf = NULL;
 
 #ifdef LNSTAT
@@ -211,46 +216,44 @@ ISR(USART0_TXC_vect)
     }
 }
 
-void hal_ln_send(lnpacket_t *packet)
+void hal_ln_send(lnpacket_t *lnpacket)  // TODO: Expand with callback
 {
-    static uint8_t  txq_widx = 0;
     uint8_t         len, cksum;
-    uint8_t        *p;
+    uint8_t        *data;
 
-    len = hal_ln_packet_len(packet) - 2;
-    cksum = ~packet->raw[0];
-    p = &packet->raw[1];
+    len = hal_ln_packet_len(lnpacket) - 2;
+    cksum = ~lnpacket->raw[0];
+    data = &lnpacket->raw[1];
     while (len--)
     {
-        *p &= 0x7f;
-        cksum ^= *p++;
+        *data &= 0x7f;
+        cksum ^= *data++;
     }
-    *p = cksum;
+    *data = cksum;
 
-    tx_queue[txq_widx++] = packet;
-    if (txq_widx >= LNPACKET_CNT)
-        txq_widx = 0;
-    txq_cnt++;
+    fifo_queue_put(&queue_tx, &PACKET_FROM_LN(lnpacket)->fifo);
 }
 
 static void tx_update(void)
 {
-    static uint8_t  txq_ridx = 0;
+    fifo_t         *packetfifo;
 
-    if (tx_buf != NULL || txq_cnt == 0)
-        return;
+    if (tx_buf)
+        return;         // Tx in progress
 
     // Tx idle: Send next packet in queue
+
+    packetfifo = fifo_queue_get(&queue_tx);
+    if (!packetfifo)
+        return;         // No packets in tx queue
+
 #ifdef LNSTAT
     stat.tx_total++;
     tx_attempt = 0;
 #endif
 
-    tx_buf = tx_queue[txq_ridx++];
-    if (txq_ridx >= LNPACKET_CNT)
-        txq_ridx = 0;
-    txq_cnt--;
-    tx_len = hal_ln_packet_len(tx_buf);
+    tx_buf = PACKET_FROM_FIFO(packetfifo);
+    tx_len = hal_ln_packet_len(&tx_buf->lndata);
     tx_delay = CD_BACKOFF_MAX;
 
     // Check if transmit is allowed now
@@ -269,18 +272,14 @@ typedef enum
     RXS_DATA
 } rx_state_t;
 
-static lnpacket_t      *rx_queue[LNPACKET_CNT];
-static volatile uint8_t rxq_cnt = 0;
-
 
 ISR(USART0_RXC_vect)
 {    
-    static lnpacket_t  *buf = NULL;
+    static packet_t    *buf = NULL;
     static rx_state_t   state = RXS_IDLE;
     static uint8_t      idx = 0;
     static uint8_t      cksum;
     static uint8_t      len;
-    static uint8_t      rxq_widx = 0;
     uint8_t             data;
     uint8_t             status;
 
@@ -326,7 +325,7 @@ ISR(USART0_RXC_vect)
             }
             if (data & 0x80)
             {
-                buf->raw[0] = data;
+                buf->lndata.raw[0] = data;
                 cksum = data;
                 idx = 1;
                 state = RXS_DATA;
@@ -340,20 +339,17 @@ ISR(USART0_RXC_vect)
             break;
             
         case RXS_DATA:
-            buf->raw[idx++] = data;
+            buf->lndata.raw[idx++] = data;
             cksum ^= data;
             if (idx == 2)
-                len = packet_len_irq(buf);
+                len = packet_len_irq(&buf->lndata);
             if (idx >= len)
             {
                 // Full packet received. Check checksum
                 if (cksum == 0xff)
                 {
                     // Packet valid. Put in rx queue
-                    rx_queue[rxq_widx++] = buf;
-                    if (rxq_widx >= LNPACKET_CNT)
-                        rxq_widx = 0;
-                    rxq_cnt++;
+                    fifo_queue_put_irq(&queue_rx, &buf->fifo);
                     buf = NULL;
 #ifdef LNSTAT
                     stat.rx_success++;
@@ -374,20 +370,12 @@ ISR(USART0_RXC_vect)
 
 lnpacket_t *hal_ln_receive(void)
 {
-    static uint8_t  rxq_ridx = 0;
-    lnpacket_t     *p;
-    
-    if (rxq_cnt == 0)
-        return NULL;
+    fifo_t *p;
 
-    p = rx_queue[rxq_ridx++];
-    if (rxq_ridx >= LNPACKET_CNT)
-        rxq_ridx = 0;
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-    {
-        rxq_cnt--;
-    }
-    return p;
+    p = fifo_queue_get(&queue_free);
+    if (p)
+        return &PACKET_FROM_FIFO(p)->lndata;
+    return NULL;
 }
 
 
@@ -414,10 +402,9 @@ void hal_ln_init(void)
     USART0.STATUS = USART_RXCIF_bm | USART_TXCIF_bm;    // Clear interrupt flags
     USART0.CTRLB = USART_RXEN_bm | USART_TXEN_bm | USART_RXMODE_NORMAL_gc;
 
-    // Init LN packet list
+    // Init packet queue
     for (uint8_t i = 0; i < LNPACKET_CNT; i++)
-        freepacket[i] = &packets[i];
-    freepackets = LNPACKET_CNT;
+        fifo_queue_put(&queue_free, &packets[i].fifo);
 }
 
 void hal_ln_update(void)
@@ -526,9 +513,10 @@ void ln_cmd(uint8_t argc, char *argv[])
             printf_P(PSTR(" Collisions:         %u\n"), s.rx_collisions);
             printf_P(PSTR(" No memory:          %u\n"), s.rx_nomem);
             printf_P(PSTR("Mem:\n"));
-            printf_P(PSTR(" Free packets:       %u\n"), freepackets);
-            printf_P(PSTR(" In tx queue:        %u\n"), txq_cnt);
-            printf_P(PSTR(" In rx queue:        %u\n"), rxq_cnt);
+            printf_P(PSTR(" Free packets:       %u\n"), fifo_queue_size(&queue_free));
+            printf_P(PSTR(" In tx queue:        %u\n"), fifo_queue_size(&queue_tx));
+            printf_P(PSTR(" In rx queue:        %u\n"), fifo_queue_size(&queue_rx));
+            printf_P(PSTR(" In done queue:      %u\n"), fifo_queue_size(&queue_done));
             break;
         }        
 #endif
