@@ -55,8 +55,8 @@ static stat_t           stat;
 typedef struct
 {
     fifo_t      fifo;
-    // cb_t    *cb;     // TODO: Callback when packet is sent
-    // void    *ctx;
+    hal_ln_tx_done_cb *cb;
+    void       *ctx;
     lnpacket_t  lndata;
 } packet_t;
 
@@ -216,10 +216,11 @@ ISR(USART0_TXC_vect)
     }
 }
 
-void hal_ln_send(lnpacket_t *lnpacket)  // TODO: Expand with callback
+void hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, void *ctx)
 {
     uint8_t         len, cksum;
     uint8_t        *data;
+    packet_t       *packet;
 
     len = hal_ln_packet_len(lnpacket) - 2;
     cksum = ~lnpacket->raw[0];
@@ -231,7 +232,10 @@ void hal_ln_send(lnpacket_t *lnpacket)  // TODO: Expand with callback
     }
     *data = cksum;
 
-    fifo_queue_put(&queue_tx, &PACKET_FROM_LN(lnpacket)->fifo);
+    packet = PACKET_FROM_LN(lnpacket);
+    packet->cb = cb;
+    packet->ctx = ctx;
+    fifo_queue_put(&queue_tx, &packet->fifo);
 }
 
 static void tx_update(void)
@@ -262,6 +266,23 @@ static void tx_update(void)
     else    // if not, set timer to start tx when it is allowed
         tx_arm_timer(tx_delay);
 }
+
+static void tx_done_update(void)
+{
+    fifo_t         *packetfifo;
+    packet_t       *packet;
+
+    packetfifo = fifo_queue_get(&queue_done);
+    if (!packetfifo)
+        return;         // No packets in done queue
+
+    packet = PACKET_FROM_FIFO(packetfifo);
+    if (packet->cb)
+        packet->cb(packet->ctx);    // Tx done callback
+
+    fifo_queue_put(&queue_free, packetfifo);
+}
+
 
 /**************/
 /* RX section */
@@ -372,7 +393,7 @@ lnpacket_t *hal_ln_receive(void)
 {
     fifo_t *p;
 
-    p = fifo_queue_get(&queue_free);
+    p = fifo_queue_get(&queue_rx);
     if (p)
         return &PACKET_FROM_FIFO(p)->lndata;
     return NULL;
@@ -410,6 +431,7 @@ void hal_ln_init(void)
 void hal_ln_update(void)
 {
     tx_update();
+    tx_done_update();
 }
 
 
@@ -462,7 +484,7 @@ void ln_cmd(uint8_t argc, char *argv[])
             txdata->input_rep.zero1 = 0;
             txdata->input_rep.zero2 = 0;
             
-            hal_ln_send(txdata);
+            hal_ln_send(txdata, NULL, NULL);
             break;
         }
 
@@ -487,7 +509,7 @@ void ln_cmd(uint8_t argc, char *argv[])
             len = argc - 2;
             for (uint8_t i = 0; i < len; i++)
                 txdata->raw[i] = strtoul(argv[i + 2], NULL, 0);
-            hal_ln_send(txdata);
+            hal_ln_send(txdata, NULL, NULL);
             break;
         }
 
