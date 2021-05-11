@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include "ln_def.h"
 
+typedef void (hal_ln_tx_done_cb)(void *);
+
 
 extern lnpacket_t  *hal_ln_packet_get(void);
 extern void         hal_ln_packet_free(lnpacket_t *p);
@@ -20,7 +22,7 @@ extern uint8_t      hal_ln_packet_len(const lnpacket_t *packet);
 
 extern void         hal_ln_init(void);
 extern void         hal_ln_update(void);
-extern void         hal_ln_send(lnpacket_t *packet);
+extern void         hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, void *ctx);
 extern lnpacket_t  *hal_ln_receive(void);
 
 extern const __flash char cmdln_name[];
