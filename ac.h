@@ -9,6 +9,12 @@
 #ifndef AC_H_
 #define AC_H_
 
+/**
+ * Init analog comparator.
+ *
+ * Call once before interrupts are enabled.
+ * NOTE: Handled from hal_ln.c
+ */
 extern void ac_init(void);
 
 #endif /* AC_H_ */

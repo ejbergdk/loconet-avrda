@@ -23,8 +23,9 @@
 #define BAUD_REG    ((64 * F_CPU + 8 * BAUDRATE) / (16 * BAUDRATE))
 
 
-/*************/
-/* Stat vars */
+/************************************************************************/
+/* Statistics variables                                                 */
+/************************************************************************/
 
 #ifdef LNSTAT
 static uint8_t          tx_attempt;
@@ -47,17 +48,24 @@ static stat_t           stat;
 #endif
 
 
-/***************************/
-/* LocoNet packets section */
+/************************************************************************/
+/* LocoNet packet handling                                              */
+/************************************************************************/
 
+/**
+ * Number of LocoNet packets allocated.
+ */
 #define LNPACKET_CNT    8
 
+/**
+ * Packet structure for LocoNet and housekeeping data.
+ */
 typedef struct
 {
-    fifo_t      fifo;
-    hal_ln_tx_done_cb *cb;
-    void       *ctx;
-    lnpacket_t  lndata;
+    fifo_t      fifo;       // Fifo data
+    hal_ln_tx_done_cb *cb;  // Callback function pointer
+    void       *ctx;        // Callback context pointer
+    lnpacket_t  lndata;     // LocoNet data
 } packet_t;
 
 #define PACKET_FROM_FIFO(x) ((packet_t *)((uint8_t *)(x) - offsetof(packet_t, fifo)))
@@ -71,6 +79,9 @@ static fifo_queue_t queue_tx = {NULL, NULL};
 static fifo_queue_t queue_done = {NULL, NULL};
 
 
+/*
+ * Inline version of hal_ln_packet_get for use in interrupts.
+ */
 static inline __attribute__((always_inline)) packet_t *packet_get_irq(void)
 {
     fifo_t *p;
@@ -119,7 +130,7 @@ uint8_t hal_ln_packet_len(const lnpacket_t *packet)
 }
 
 /*
- * Inline version of hal_ln_packet_len for use in interrupts
+ * Inline version of hal_ln_packet_len for use in interrupts.
  */
 static inline __attribute__((always_inline)) uint8_t packet_len_irq(const lnpacket_t *packet)
 {
@@ -127,14 +138,18 @@ static inline __attribute__((always_inline)) uint8_t packet_len_irq(const lnpack
 }
 
 
-/**************/
-/* TX section */
+/************************************************************************/
+/* LocoNet transmitting section                                         */
+/************************************************************************/
 
 static packet_t        *tx_buf = NULL;
 static uint8_t          tx_len;
 static uint8_t          tx_idx;
 static uint16_t         tx_delay;
 
+/*
+ * Start transmitting packet.
+ */
 static inline __attribute__((always_inline)) void tx_start(void)
 {
     ccl_collision_clear();
@@ -150,6 +165,9 @@ static inline __attribute__((always_inline)) void tx_start(void)
 #endif
 }
 
+/*
+ * Set timer for next transmission attempt.
+ */
 static inline __attribute__((always_inline)) void tx_arm_timer(uint16_t cnt)
 {
     if (TCB2.CNT >= (cnt - 1))
@@ -159,12 +177,20 @@ static inline __attribute__((always_inline)) void tx_arm_timer(uint16_t cnt)
     TCB2.INTCTRL = TCB_CAPT_bm;     // Enable capture interrupt
 }
 
+/*
+ * Timer interrupt.
+ * CD BACKOFF time has elapsed. Start transmitting.
+ */
 ISR(TCB2_INT_vect)
 {
     TCB2.INTCTRL = 0;               // Disable capture interrupt
     tx_start();
 }
 
+/*
+ * Data register empty interrupt.
+ * Send next byte to USART.
+ */
 ISR(USART0_DRE_vect)
 {
     if (!ccl_collision())
@@ -174,6 +200,7 @@ ISR(USART0_DRE_vect)
             return;
     }
 
+    // Last byte has been written to USART
     // Clear tx complete interrupt flag
     USART0.STATUS = USART_TXCIF_bm;
 
@@ -184,6 +211,10 @@ ISR(USART0_DRE_vect)
     USART0.CTRLA = tmp;
 }
 
+/*
+ * TX complete interrupt.
+ * End packet transmission and check for collision.
+ */
 ISR(USART0_TXC_vect)
 {
     PORTA.OUTCLR = PIN4_bm;     // XDIR = 0
@@ -205,6 +236,7 @@ ISR(USART0_TXC_vect)
     }
     else
     {
+        // Put sent packet in done queue, for further processing
         fifo_queue_put_irq(&queue_done, &tx_buf->fifo);
         tx_buf = NULL;
 
@@ -238,6 +270,9 @@ void hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, void *ctx)
     fifo_queue_put(&queue_tx, &packet->fifo);
 }
 
+/*
+ * Handle tx queue.
+ */
 static void tx_update(void)
 {
     fifo_t         *packetfifo;
@@ -267,6 +302,9 @@ static void tx_update(void)
         tx_arm_timer(tx_delay);
 }
 
+/*
+ * Handle tx done queue (callback and packet freeing).
+ */
 static void tx_done_update(void)
 {
     fifo_t         *packetfifo;
@@ -284,8 +322,9 @@ static void tx_done_update(void)
 }
 
 
-/**************/
-/* RX section */
+/************************************************************************/
+/* LocoNet receiving section                                            */
+/************************************************************************/
 
 typedef enum
 {
@@ -294,6 +333,9 @@ typedef enum
 } rx_state_t;
 
 
+/*
+ * RX complete interrupt.
+ */
 ISR(USART0_RXC_vect)
 {    
     static packet_t    *buf = NULL;
@@ -400,8 +442,9 @@ lnpacket_t *hal_ln_receive(void)
 }
 
 
-/**********/
-/* Common */
+/************************************************************************/
+/* Common stuff                                                         */
+/************************************************************************/
 
 void hal_ln_init(void)
 {
@@ -434,6 +477,10 @@ void hal_ln_update(void)
     tx_done_update();
 }
 
+
+/************************************************************************/
+/* Debug command related stuff.                                         */
+/************************************************************************/
 
 const __flash char cmdln_name[] = "ln";
 const __flash char cmdln_help[] = "Loconet test";
