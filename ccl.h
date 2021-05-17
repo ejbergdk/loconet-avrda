@@ -47,6 +47,8 @@ static inline __attribute__((always_inline)) void ccl_collision_clear(void)
 
 /**
  * Get pseudo-random number.
+ *
+ * Well not random at all, but good enough if only a few LSB's are used.
  */
 static inline __attribute__((always_inline)) uint16_t ccl_rnd(void)
 {

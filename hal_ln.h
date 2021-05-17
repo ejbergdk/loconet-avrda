@@ -76,7 +76,7 @@ extern uint8_t      hal_ln_packet_len(const lnpacket_t *packet);
  *                 LocoNet packet is freed by function.
  * @param cb       Callback function for packet sent notification.
  *                 Set to NULL if not used.
- * @ctx            Pointer to context data, that will be passed on to
+ * @param ctx      Pointer to context data, that will be passed on to
  *                 the callback function.
  */
 extern void         hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, void *ctx);
