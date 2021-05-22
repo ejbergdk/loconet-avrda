@@ -28,13 +28,12 @@
 /************************************************************************/
 
 #ifdef LNSTAT
-static uint8_t          tx_attempt;
-
 typedef struct
 {
     uint8_t             tx_max_attempts;
     uint16_t            tx_total;
     uint16_t            tx_success;
+    uint16_t            tx_fail;
     uint16_t            tx_collisions;
     uint16_t            rx_success;
     uint16_t            rx_checksum;
@@ -62,10 +61,11 @@ static stat_t           stat;
  */
 typedef struct
 {
-    fifo_t      fifo;       // Fifo data
-    hal_ln_tx_done_cb *cb;  // Callback function pointer
-    void       *ctx;        // Callback context pointer
-    lnpacket_t  lndata;     // LocoNet data
+    fifo_t          fifo;       // Fifo data
+    hal_ln_tx_done_cb *cb;      // Callback function pointer
+    void           *ctx;        // Callback context pointer
+    hal_ln_result_t res;        // Result code
+    lnpacket_t      lndata;     // LocoNet data
 } packet_t;
 
 #define PACKET_FROM_FIFO(x) ((packet_t *)((uint8_t *)(x) - offsetof(packet_t, fifo)))
@@ -142,10 +142,18 @@ static inline __attribute__((always_inline)) uint8_t packet_len_irq(const lnpack
 /* LocoNet transmitting section                                         */
 /************************************************************************/
 
+/**
+ * Attempts for transmitting a packet before giving up.
+ * LN specification only states AT LEAST 25.
+ */
+#define TX_ATTEMPTS_MAX 50
+
 static packet_t        *tx_buf = NULL;
 static uint8_t          tx_len;
 static uint8_t          tx_idx;
 static uint16_t         tx_delay;
+static uint8_t          tx_attempt;
+
 
 /*
  * Start transmitting packet.
@@ -160,9 +168,7 @@ static inline __attribute__((always_inline)) void tx_start(void)
     {
         USART0.CTRLA |= USART_DREIE_bm; // Enable data register empty interrupt
     }
-#ifdef LNSTAT
     tx_attempt++;
-#endif
 }
 
 /*
@@ -217,35 +223,57 @@ ISR(USART0_DRE_vect)
  */
 ISR(USART0_TXC_vect)
 {
+    uint8_t fail = 0;
+
     PORTA.OUTCLR = PIN4_bm;     // XDIR = 0
     USART0.CTRLA &= ~USART_TXCIE_bm;
 
     if (ccl_collision())
     {
-        if (tx_delay > CD_BACKOFF_MIN)
-        {
-            tx_delay -= 2 + (ccl_rnd() & 0x03);
-            if (tx_delay < CD_BACKOFF_MIN)
-                tx_delay = CD_BACKOFF_MIN;
-        }        
-        tx_arm_timer(tx_delay);
-
 #ifdef LNSTAT
         stat.tx_collisions++;
+#endif
+
+        if (tx_attempt < TX_ATTEMPTS_MAX)
+        {
+            if (tx_delay > CD_BACKOFF_MIN)
+            {
+                // Subtract 0.5 to 1 bit time from delay, and try again
+                tx_delay -= (30 / CD_TICK_TIME) + (ccl_rnd() & 0x03);
+                if (tx_delay < CD_BACKOFF_MIN)
+                    tx_delay = CD_BACKOFF_MIN;
+            }
+            tx_arm_timer(tx_delay);
+            return;
+        }
+
+        fail = 1;
+    }
+
+    // Determine if packet tx was successful or not
+    if (fail == 0)
+    {
+        tx_buf->res = HAL_LN_SUCCESS;
+#ifdef LNSTAT
+        stat.tx_success++;
 #endif
     }
     else
     {
-        // Put sent packet in done queue, for further processing
-        fifo_queue_put_irq(&queue_done, &tx_buf->fifo);
-        tx_buf = NULL;
-
+        tx_buf->res = HAL_LN_FAIL;
 #ifdef LNSTAT
-        stat.tx_success++;
-        if (stat.tx_max_attempts < tx_attempt)
-            stat.tx_max_attempts = tx_attempt;
+        stat.tx_fail++;
 #endif
     }
+
+    // Put sent packet in done queue, for further processing outside interrupt
+    fifo_queue_put_irq(&queue_done, &tx_buf->fifo);
+    tx_buf = NULL;
+
+#ifdef LNSTAT
+    if (stat.tx_max_attempts < tx_attempt)
+        stat.tx_max_attempts = tx_attempt;
+#endif
 }
 
 void hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, void *ctx)
@@ -288,12 +316,12 @@ static void tx_update(void)
 
 #ifdef LNSTAT
     stat.tx_total++;
-    tx_attempt = 0;
 #endif
 
     tx_buf = PACKET_FROM_FIFO(packetfifo);
     tx_len = hal_ln_packet_len(&tx_buf->lndata);
     tx_delay = CD_BACKOFF_MAX;
+    tx_attempt = 0;
 
     // Check if transmit is allowed now
     if ((TCB2.CNT >= tx_delay) && (TCB2.STATUS & TCB_RUN_bm))
@@ -316,7 +344,7 @@ static void tx_done_update(void)
 
     packet = PACKET_FROM_FIFO(packetfifo);
     if (packet->cb)
-        packet->cb(packet->ctx);    // Tx done callback
+        packet->cb(packet->ctx, packet->res);   // Tx done callback
 
     fifo_queue_put(&queue_free, packetfifo);
 }
@@ -572,6 +600,7 @@ void ln_cmd(uint8_t argc, char *argv[])
             printf_P(PSTR("TX:\n"));
             printf_P(PSTR(" Packets scheduled:  %u\n"), s.tx_total);
             printf_P(PSTR(" Packets sent:       %u\n"), s.tx_success);
+            printf_P(PSTR(" Packets tx fail:    %u\n"), s.tx_fail);
             printf_P(PSTR(" Collisions:         %u\n"), s.tx_collisions);
             printf_P(PSTR(" Max attemps for tx: %u\n"), s.tx_max_attempts);
             printf_P(PSTR("RX:\n"));

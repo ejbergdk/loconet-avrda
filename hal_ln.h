@@ -15,10 +15,18 @@
 
 
 /**
+ * Callback result codes
+ */
+typedef enum
+{
+    HAL_LN_SUCCESS,
+    HAL_LN_FAIL
+} hal_ln_result_t;
+
+/**
  * Callback type for tx done.
  */
-typedef void (hal_ln_tx_done_cb)(void *);
-
+typedef void (hal_ln_tx_done_cb)(void *, hal_ln_result_t res);
 
 /**
  * Init LocoNet library.
