@@ -3,7 +3,7 @@
  *
  * Created: 31-05-2020 11:08:24
  *  Author: Mikael Ejberg Pedersen
- */ 
+ */
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
@@ -30,20 +30,20 @@
 #ifdef LNSTAT
 typedef struct
 {
-    uint8_t             tx_max_attempts;
-    uint16_t            tx_total;
-    uint16_t            tx_success;
-    uint16_t            tx_fail;
-    uint16_t            tx_collisions;
-    uint16_t            rx_success;
-    uint16_t            rx_checksum;
-    uint16_t            rx_partial;
-    uint16_t            rx_extradata;
-    uint16_t            rx_collisions;
-    uint16_t            rx_nomem;
+    uint8_t         tx_max_attempts;
+    uint16_t        tx_total;
+    uint16_t        tx_success;
+    uint16_t        tx_fail;
+    uint16_t        tx_collisions;
+    uint16_t        rx_success;
+    uint16_t        rx_checksum;
+    uint16_t        rx_partial;
+    uint16_t        rx_extradata;
+    uint16_t        rx_collisions;
+    uint16_t        rx_nomem;
 } stat_t;
 
-static stat_t           stat;
+static stat_t   stat;
 #endif
 
 
@@ -71,20 +71,21 @@ typedef struct
 #define PACKET_FROM_FIFO(x) ((packet_t *)((uint8_t *)(x) - offsetof(packet_t, fifo)))
 #define PACKET_FROM_LN(x) ((packet_t *)((uint8_t *)(x) - offsetof(packet_t, lndata)))
 
-static packet_t     packets[LNPACKET_CNT];
+static packet_t packets[LNPACKET_CNT];
 
-static fifo_queue_t queue_free = {NULL, NULL};
-static fifo_queue_t queue_rx = {NULL, NULL};
-static fifo_queue_t queue_tx = {NULL, NULL};
-static fifo_queue_t queue_done = {NULL, NULL};
+static fifo_queue_t queue_free = { NULL, NULL };
+static fifo_queue_t queue_rx = { NULL, NULL };
+static fifo_queue_t queue_tx = { NULL, NULL };
+static fifo_queue_t queue_done = { NULL, NULL };
 
 
 /*
  * Inline version of hal_ln_packet_get for use in interrupts.
  */
-static inline __attribute__((always_inline)) packet_t *packet_get_irq(void)
+__attribute__ ((always_inline))
+static inline packet_t *packet_get_irq(void)
 {
-    fifo_t *p;
+    fifo_t         *p;
 
     p = fifo_queue_get_irq(&queue_free);
     if (p)
@@ -92,9 +93,9 @@ static inline __attribute__((always_inline)) packet_t *packet_get_irq(void)
     return NULL;
 }
 
-lnpacket_t *hal_ln_packet_get(void)
+lnpacket_t     *hal_ln_packet_get(void)
 {
-    fifo_t *p;
+    fifo_t         *p;
 
     p = fifo_queue_get(&queue_free);
     if (p)
@@ -104,37 +105,26 @@ lnpacket_t *hal_ln_packet_get(void)
 
 void hal_ln_packet_free(lnpacket_t *p)
 {
-    packet_t *packet;
+    packet_t       *packet;
 
     packet = PACKET_FROM_LN(p);
     fifo_queue_put(&queue_free, &packet->fifo);
 }
 
-#define PACK_LEN(p)             \
-    switch (p->hdr.op & 0x60)   \
-    {                           \
-        case 0x00:              \
-        default:                \
-            return 2;           \
-        case 0x20:              \
-            return 4;           \
-        case 0x40:              \
-            return 6;           \
-        case 0x60:              \
-            return p->hdr.len;  \
-    }
-
 uint8_t hal_ln_packet_len(const lnpacket_t *packet)
 {
-    PACK_LEN(packet)
-}
-
-/*
- * Inline version of hal_ln_packet_len for use in interrupts.
- */
-static inline __attribute__((always_inline)) uint8_t packet_len_irq(const lnpacket_t *packet)
-{
-    PACK_LEN(packet)
+    switch (packet->hdr.op & 0x60)
+    {
+    case 0x00:
+    default:
+        return 2;
+    case 0x20:
+        return 4;
+    case 0x40:
+        return 6;
+    case 0x60:
+        return packet->hdr.len;
+    }
 }
 
 
@@ -148,20 +138,21 @@ static inline __attribute__((always_inline)) uint8_t packet_len_irq(const lnpack
  */
 #define TX_ATTEMPTS_MAX 50
 
-static packet_t        *tx_buf = NULL;
-static uint8_t          tx_len;
-static uint8_t          tx_idx;
-static uint16_t         tx_delay;
-static uint8_t          tx_attempt;
+static packet_t *tx_buf = NULL;
+static uint8_t  tx_len;
+static uint8_t  tx_idx;
+static uint16_t tx_delay;
+static uint8_t  tx_attempt;
 
 
 /*
  * Start transmitting packet.
  */
-static inline __attribute__((always_inline)) void tx_start(void)
+__attribute__ ((always_inline))
+static inline void tx_start(void)
 {
     ccl_collision_clear();
-    PORTA.OUTSET = PIN4_bm;             // XDIR = 1
+    PORTA.OUTSET = PIN4_bm;     // XDIR = 1
     USART0.TXDATAL = tx_buf->lndata.raw[0];
     tx_idx = 1;
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
@@ -174,13 +165,14 @@ static inline __attribute__((always_inline)) void tx_start(void)
 /*
  * Set timer for next transmission attempt.
  */
-static inline __attribute__((always_inline)) void tx_arm_timer(uint16_t cnt)
+__attribute__ ((always_inline))
+static inline void tx_arm_timer(uint16_t cnt)
 {
     if (TCB2.CNT >= (cnt - 1))
         cnt = TCB2.CNT + 2;
     TCB2.CCMP = cnt;
-    TCB2.INTFLAGS = TCB_CAPT_bm;    // Clear capture interrupt flag
-    TCB2.INTCTRL = TCB_CAPT_bm;     // Enable capture interrupt
+    TCB2.INTFLAGS = TCB_CAPT_bm;        // Clear capture interrupt flag
+    TCB2.INTCTRL = TCB_CAPT_bm; // Enable capture interrupt
 }
 
 /*
@@ -189,7 +181,7 @@ static inline __attribute__((always_inline)) void tx_arm_timer(uint16_t cnt)
  */
 ISR(TCB2_INT_vect)
 {
-    TCB2.INTCTRL = 0;               // Disable capture interrupt
+    TCB2.INTCTRL = 0;           // Disable capture interrupt
     tx_start();
 }
 
@@ -211,7 +203,8 @@ ISR(USART0_DRE_vect)
     USART0.STATUS = USART_TXCIF_bm;
 
     // Disable data register empty and enable tx complete interrupt
-    uint8_t tmp = USART0.CTRLA;
+    uint8_t         tmp = USART0.CTRLA;
+
     tmp &= ~USART_DREIE_bm;
     tmp |= USART_TXCIE_bm;
     USART0.CTRLA = tmp;
@@ -223,7 +216,7 @@ ISR(USART0_DRE_vect)
  */
 ISR(USART0_TXC_vect)
 {
-    uint8_t fail = 0;
+    uint8_t         fail = 0;
 
     PORTA.OUTCLR = PIN4_bm;     // XDIR = 0
     USART0.CTRLA &= ~USART_TXCIE_bm;
@@ -306,13 +299,13 @@ static void tx_update(void)
     fifo_t         *packetfifo;
 
     if (tx_buf)
-        return;         // Tx in progress
+        return;                 // Tx in progress
 
     // Tx idle: Send next packet in queue
 
     packetfifo = fifo_queue_get(&queue_tx);
     if (!packetfifo)
-        return;         // No packets in tx queue
+        return;                 // No packets in tx queue
 
 #ifdef LNSTAT
     stat.tx_total++;
@@ -326,7 +319,7 @@ static void tx_update(void)
     // Check if transmit is allowed now
     if ((TCB2.CNT >= tx_delay) && (TCB2.STATUS & TCB_RUN_bm))
         tx_start();
-    else    // if not, set timer to start tx when it is allowed
+    else                        // if not, set timer to start tx when it is allowed
         tx_arm_timer(tx_delay);
 }
 
@@ -340,7 +333,7 @@ static void tx_done_update(void)
 
     packetfifo = fifo_queue_get(&queue_done);
     if (!packetfifo)
-        return;         // No packets in done queue
+        return;                 // No packets in done queue
 
     packet = PACKET_FROM_FIFO(packetfifo);
     if (packet->cb)
@@ -364,20 +357,20 @@ typedef enum
 /*
  * RX complete interrupt.
  */
-ISR(USART0_RXC_vect)
-{    
-    static packet_t    *buf = NULL;
-    static rx_state_t   state = RXS_IDLE;
-    static uint8_t      idx = 0;
-    static uint8_t      cksum;
-    static uint8_t      len;
-    uint8_t             data;
-    uint8_t             status;
+__attribute__ ((flatten)) ISR(USART0_RXC_vect)
+{
+    static packet_t *buf = NULL;
+    static rx_state_t state = RXS_IDLE;
+    static uint8_t  idx = 0;
+    static uint8_t  cksum;
+    static uint8_t  len;
+    uint8_t         data;
+    uint8_t         status;
 
     status = USART0.RXDATAH;
     data = USART0.RXDATAL;
 
-    if ((status & USART_FERR_bm))   // Framing error: Restart rx packet
+    if ((status & USART_FERR_bm))       // Framing error: Restart rx packet
     {
         state = RXS_IDLE;
         idx = 0;
@@ -395,73 +388,73 @@ ISR(USART0_RXC_vect)
         {
             idx = 0;
             stat.rx_partial++;
-        }        
+        }
 #endif
-    }    
+    }
 
     switch (state)
     {
-        case RXS_IDLE:
-        default:
+    case RXS_IDLE:
+    default:
+        if (!buf)
+        {
+            buf = packet_get_irq();
             if (!buf)
             {
-                buf = packet_get_irq();
-                if (!buf)
-                {
 #ifdef LNSTAT
-                    stat.rx_nomem++;
+                stat.rx_nomem++;
 #endif
-                    return;
-                }
+                return;
             }
-            if (data & 0x80)
+        }
+        if (data & 0x80)
+        {
+            buf->lndata.raw[0] = data;
+            cksum = data;
+            idx = 1;
+            state = RXS_DATA;
+        }
+        else
+        {
+#ifdef LNSTAT
+            stat.rx_extradata++;
+#endif
+        }
+        break;
+
+    case RXS_DATA:
+        buf->lndata.raw[idx++] = data;
+        cksum ^= data;
+        if (idx == 2)
+            len = hal_ln_packet_len(&buf->lndata);
+        if (idx >= len)
+        {
+            // Full packet received. Check checksum
+            if (cksum == 0xff)
             {
-                buf->lndata.raw[0] = data;
-                cksum = data;
-                idx = 1;
-                state = RXS_DATA;
+                // Packet valid. Put in rx queue
+                fifo_queue_put_irq(&queue_rx, &buf->fifo);
+                buf = NULL;
+#ifdef LNSTAT
+                stat.rx_success++;
+#endif
             }
             else
             {
 #ifdef LNSTAT
-                stat.rx_extradata++;
+                stat.rx_checksum++;
 #endif
             }
-            break;
-            
-        case RXS_DATA:
-            buf->lndata.raw[idx++] = data;
-            cksum ^= data;
-            if (idx == 2)
-                len = packet_len_irq(&buf->lndata);
-            if (idx >= len)
-            {
-                // Full packet received. Check checksum
-                if (cksum == 0xff)
-                {
-                    // Packet valid. Put in rx queue
-                    fifo_queue_put_irq(&queue_rx, &buf->fifo);
-                    buf = NULL;
-#ifdef LNSTAT
-                    stat.rx_success++;
-#endif
-                }
-                else
-                {
-#ifdef LNSTAT
-                    stat.rx_checksum++;
-#endif
-                }
-                state = RXS_IDLE;
-                idx = 0;
-            }                
-            break;
+            state = RXS_IDLE;
+            idx = 0;
+        }
+        break;
     }
 }
 
-lnpacket_t *hal_ln_receive(void)
+lnpacket_t     *hal_ln_receive(void)
 {
-    fifo_t *p;
+    fifo_t         *p;
 
     p = fifo_queue_get(&queue_rx);
     if (p)
@@ -486,7 +479,7 @@ void hal_ln_init(void)
     PORTA.DIRSET = PIN4_bm;     // TX active (manual XDIR pin with less delay)
 
     // Init USART
-    USART0.CTRLA = USART_RXCIE_bm | USART_RS485_DISABLE_gc; // Enable rx complete interrupt
+    USART0.CTRLA = USART_RXCIE_bm | USART_RS485_DISABLE_gc;     // Enable rx complete interrupt
     USART0.CTRLC = USART_CMODE_ASYNCHRONOUS_gc | USART_PMODE_DISABLED_gc | USART_SBMODE_1BIT_gc | USART_CHSIZE_8BIT_gc;
     USART0.BAUD = BAUD_REG;
     USART0.DBGCTRL = USART_DBGRUN_bm;
@@ -528,11 +521,11 @@ void ln_cmd(uint8_t argc, char *argv[])
 
     switch (argv[1][0])
     {
-        case 'i':
+    case 'i':
         {
-            lnpacket_t *txdata;
-            uint16_t    adr;
-            uint8_t     occupied;
+            lnpacket_t     *txdata;
+            uint16_t        adr;
+            uint8_t         occupied;
 
             if (argc < 4)
             {
@@ -558,15 +551,15 @@ void ln_cmd(uint8_t argc, char *argv[])
             txdata->input_rep.x = 1;
             txdata->input_rep.zero1 = 0;
             txdata->input_rep.zero2 = 0;
-            
+
             hal_ln_send(txdata, NULL, NULL);
             break;
         }
 
-        case 't':
+    case 't':
         {
-            lnpacket_t *txdata;
-            uint8_t     len;
+            lnpacket_t     *txdata;
+            uint8_t         len;
 
             if (argc < 3)
             {
@@ -589,9 +582,9 @@ void ln_cmd(uint8_t argc, char *argv[])
         }
 
 #ifdef LNSTAT
-        case 's':
+    case 's':
         {
-            stat_t s;
+            stat_t          s;
 
             ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
             {
@@ -616,11 +609,11 @@ void ln_cmd(uint8_t argc, char *argv[])
             printf_P(PSTR(" In rx queue:        %u\n"), fifo_queue_size(&queue_rx));
             printf_P(PSTR(" In done queue:      %u\n"), fifo_queue_size(&queue_done));
             break;
-        }        
+        }
 #endif
 
-        default:
-            printf_P(PSTR("Unknown argument\n"));
-            break;
+    default:
+        printf_P(PSTR("Unknown argument\n"));
+        break;
     }
 }

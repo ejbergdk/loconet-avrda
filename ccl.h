@@ -3,7 +3,7 @@
  *
  * Created: 21-05-2020 16:42:43
  *  Author: Mikael Ejberg Pedersen
- */ 
+ */
 
 
 #ifndef CCL_H_
@@ -32,7 +32,8 @@
 /**
  * Get collision detection flag.
  */
-static inline __attribute__((always_inline)) uint8_t ccl_collision(void)
+__attribute__ ((always_inline))
+static inline uint8_t ccl_collision(void)
 {
     return (TCB0.INTFLAGS & TCB_CAPT_bm);
 }
@@ -40,7 +41,8 @@ static inline __attribute__((always_inline)) uint8_t ccl_collision(void)
 /**
  * Clear collision detection flag.
  */
-static inline __attribute__((always_inline)) void ccl_collision_clear(void)
+__attribute__ ((always_inline))
+static inline void ccl_collision_clear(void)
 {
     TCB0.INTFLAGS = TCB_CAPT_bm;
 }
@@ -50,7 +52,8 @@ static inline __attribute__((always_inline)) void ccl_collision_clear(void)
  *
  * Well not random at all, but good enough if only a few LSB's are used.
  */
-static inline __attribute__((always_inline)) uint16_t ccl_rnd(void)
+__attribute__ ((always_inline))
+static inline uint16_t ccl_rnd(void)
 {
     return TCA0.SINGLE.CNT;
 }
@@ -61,6 +64,6 @@ static inline __attribute__((always_inline)) uint16_t ccl_rnd(void)
  * Call once before interrupts are enabled.
  * NOTE: Handled from hal_ln.c
  */
-extern void ccl_init(void);
+extern void     ccl_init(void);
 
 #endif /* CCL_H_ */

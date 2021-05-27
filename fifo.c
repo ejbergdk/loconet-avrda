@@ -3,7 +3,7 @@
  *
  * Created: 07-05-2021 17:40:23
  *  Author: Mikael Ejberg Pedersen
- */ 
+ */
 
 #include <stddef.h>
 #include <stdint.h>
@@ -18,9 +18,9 @@ void fifo_queue_put(fifo_queue_t *queue, fifo_t *p)
     }
 }
 
-fifo_t * fifo_queue_get(fifo_queue_t *queue)
+fifo_t         *fifo_queue_get(fifo_queue_t *queue)
 {
-    fifo_t *p;
+    fifo_t         *p;
 
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
@@ -32,11 +32,11 @@ fifo_t * fifo_queue_get(fifo_queue_t *queue)
 
 uint8_t fifo_queue_size(fifo_queue_t *queue)
 {
-    uint8_t cnt = 0;
-    
+    uint8_t         cnt = 0;
+
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
-        fifo_t *p = queue->head;
+        fifo_t         *p = queue->head;
 
         while (p)
         {

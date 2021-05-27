@@ -1,0 +1,5 @@
+-kr -bap -bl -bli0 -blf -bls -i4 -l119 -ncs -npcs -npsl -fca -lc119 -nut -di16 -cp0 -bad -cdw -nce
+-T fifo_t
+-T fifo_queue_t
+-T hal_ln_tx_done_cb
+-T lnpacket_t
