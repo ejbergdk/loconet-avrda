@@ -82,7 +82,7 @@ static fifo_queue_t queue_done = { NULL, NULL };
 /*
  * Inline version of hal_ln_packet_get for use in interrupts.
  */
-__attribute__ ((always_inline))
+__attribute__((always_inline))
 static inline packet_t *packet_get_irq(void)
 {
     fifo_t         *p;
@@ -148,7 +148,7 @@ static uint8_t  tx_attempt;
 /*
  * Start transmitting packet.
  */
-__attribute__ ((always_inline))
+__attribute__((always_inline))
 static inline void tx_start(void)
 {
     ccl_collision_clear();
@@ -165,7 +165,7 @@ static inline void tx_start(void)
 /*
  * Set timer for next transmission attempt.
  */
-__attribute__ ((always_inline))
+__attribute__((always_inline))
 static inline void tx_arm_timer(uint16_t cnt)
 {
     if (TCB2.CNT >= (cnt - 1))
@@ -357,7 +357,7 @@ typedef enum
 /*
  * RX complete interrupt.
  */
-__attribute__ ((flatten)) ISR(USART0_RXC_vect)
+__attribute__((flatten)) ISR(USART0_RXC_vect)
 {
     static packet_t *buf = NULL;
     static rx_state_t state = RXS_IDLE;

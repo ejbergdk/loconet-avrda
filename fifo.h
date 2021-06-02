@@ -37,7 +37,7 @@ typedef struct
  * @param queue Pointer to queue handle.
  * @param p     Pointer to fifo data element.
  */
-__attribute__ ((always_inline))
+__attribute__((always_inline))
 static inline void fifo_queue_put_irq(fifo_queue_t *queue, fifo_t *p)
 {
     p->next = NULL;
@@ -58,7 +58,7 @@ static inline void fifo_queue_put_irq(fifo_queue_t *queue, fifo_t *p)
  * @param queue Pointer to queue handle.
  * @return      Pointer to fifo data element, or NULL if queue is empty.
  */
-__attribute__ ((always_inline))
+__attribute__((always_inline))
 static inline fifo_t *fifo_queue_get_irq(fifo_queue_t *queue)
 {
     fifo_t         *p;

@@ -139,7 +139,7 @@ void ln_rx_update(void)
 }
 
 
-__attribute__ ((weak))
+__attribute__((weak))
 void ln_rx_opc_sw_req(uint16_t adr, uint8_t dir, uint8_t on)
 {
 #ifdef LNMONITOR
@@ -147,7 +147,7 @@ void ln_rx_opc_sw_req(uint16_t adr, uint8_t dir, uint8_t on)
 #endif
 }
 
-__attribute__ ((weak))
+__attribute__((weak))
 void ln_rx_opc_sw_rep(uint16_t adr, uint8_t lt, uint8_t ic, uint8_t sel)
 {
 #ifdef LNMONITOR
@@ -158,7 +158,7 @@ void ln_rx_opc_sw_rep(uint16_t adr, uint8_t lt, uint8_t ic, uint8_t sel)
 #endif
 }
 
-__attribute__ ((weak))
+__attribute__((weak))
 void ln_rx_opc_input_rep(uint16_t adr, uint8_t l, uint8_t x)
 {
 #ifdef LNMONITOR
@@ -169,7 +169,7 @@ void ln_rx_opc_input_rep(uint16_t adr, uint8_t l, uint8_t x)
 #endif
 }
 
-__attribute__ ((weak))
+__attribute__((weak))
 void ln_rx_opc_long_ack(uint8_t lopc, uint8_t ack1)
 {
 #ifdef LNMONITOR
@@ -177,7 +177,7 @@ void ln_rx_opc_long_ack(uint8_t lopc, uint8_t ack1)
 #endif
 }
 
-__attribute__ ((weak))
+__attribute__((weak))
 void ln_rx_opc_sw_state(uint16_t adr, uint8_t dir, uint8_t on)
 {
 #ifdef LNMONITOR
@@ -185,7 +185,7 @@ void ln_rx_opc_sw_state(uint16_t adr, uint8_t dir, uint8_t on)
 #endif
 }
 
-__attribute__ ((weak))
+__attribute__((weak))
 void ln_rx_opc_sw_ack(uint16_t adr, uint8_t dir, uint8_t on)
 {
 #ifdef LNMONITOR
@@ -195,7 +195,7 @@ void ln_rx_opc_sw_ack(uint16_t adr, uint8_t dir, uint8_t on)
 
 
 
-__attribute__ ((weak))
+__attribute__((weak))
 void ln_rx_opc_unknown(const lnpacket_t *p)
 {
 }
