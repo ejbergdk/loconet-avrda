@@ -3,7 +3,7 @@
  *
  * Created: 17-05-2020 13:28:11
  *  Author: Mikael Ejberg Pedersen
- */ 
+ */
 
 #include <avr/io.h>
 #include "ac.h"
@@ -15,7 +15,7 @@ void ac_init(void)
     // Setup AC
     AC1.CTRLB = AC_WINSEL_DISABLED_gc;
     AC1.MUXCTRL = AC_MUXPOS_AINP0_gc | AC_MUXNEG_DACREF_gc;
-    AC1.DACREF = 85;    // = 340mV @ 1.024V ref
+    AC1.DACREF = 85;            // = 340mV @ 1.024V ref
     AC1.INTCTRL = 0;
     AC1.CTRLA = AC_RUNSTDBY_bm | AC_OUTEN_bm | AC_POWER_PROFILE0_gc | AC_HYSMODE_LARGE_gc | AC_ENABLE_bm;
 }

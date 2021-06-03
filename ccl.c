@@ -3,7 +3,7 @@
  *
  * Created: 21-05-2020 16:42:34
  *  Author: Mikael Ejberg Pedersen
- */ 
+ */
 
 #include <stdint.h>
 #include <stdio.h>
@@ -28,7 +28,7 @@ void ccl_init(void)
     // Ch2 LUT0 out to TCB0 event in
     EVSYS.CHANNEL2 = EVSYS_CHANNEL2_CCL_LUT0_gc;
     EVSYS.USERTCB0CAPT = 3;     // Channel 2
-    
+
     // Ch3 TCB0 CAPT to LUT2 EventA
     EVSYS.CHANNEL3 = EVSYS_CHANNEL3_TCB0_CAPT_gc;
     EVSYS.USERCCLLUT2A = 4;     // Channel 3
@@ -39,12 +39,12 @@ void ccl_init(void)
 
     // Ch5 TCA0 overflow to TCB2 clock in
     EVSYS.CHANNEL5 = EVSYS_CHANNEL5_TCA0_OVF_LUNF_gc;
-    EVSYS.USERTCB2COUNT = 6;     // Channel 5
+    EVSYS.USERTCB2COUNT = 6;    // Channel 5
 
     // Timer setup
     // TCB0 timeout check (delay) of LUT0 output
     TCB0.CTRLB = TCB_CNTMODE_TIMEOUT_gc;
-    TCB0.CCMP = F_CPU * 15 / 1000000UL;         // 15 탎 (1/4 bit)
+    TCB0.CCMP = F_CPU * 15 / 1000000UL; // 15 탎 (1/4 bit)
     TCB0.EVCTRL = TCB_CAPTEI_bm;
     TCB0.CTRLA = TCB_CLKSEL_DIV1_gc | TCB_ENABLE_bm;
 
@@ -56,11 +56,11 @@ void ccl_init(void)
 
     // TCA0 clock divider for CD backoff check in TCB2
     // Generate 100 kHz clock (10 탎)
-    TCA0.SINGLE.CTRLD = 0;  // Disable split mode
+    TCA0.SINGLE.CTRLD = 0;      // Disable split mode
     TCA0.SINGLE.CTRLB = TCA_SINGLE_WGMODE_NORMAL_gc;
     TCA0.SINGLE.CTRLC = 0;
     TCA0.SINGLE.CTRLECLR = TCA_SINGLE_DIR_bm;   // Count up
-    TCA0.SINGLE.EVCTRL = 0; // No event input
+    TCA0.SINGLE.EVCTRL = 0;     // No event input
     TCA0.SINGLE.INTCTRL = 0;    // No interrupts
     TCA0.SINGLE.PER = F_CPU * CD_TICK_TIME / 1000000UL - 1;
     TCA0.SINGLE.CTRLA = TCA_SINGLE_CLKSEL_DIV1_gc | TCA_SINGLE_ENABLE_bm;
@@ -68,7 +68,7 @@ void ccl_init(void)
     // TCB2 CD backoff check
     TCB2.CTRLB = TCB_CNTMODE_TIMEOUT_gc;
     TCB2.EVCTRL = TCB_FILTER_bm | TCB_CAPTEI_bm;
-    TCB2.INTCTRL = 0;   // No interrupts
+    TCB2.INTCTRL = 0;           // No interrupts
     TCB2.CCMP = CD_BACKOFF_MAX; // Max CD backoff: 2760 탎 (46 bits)
     TCB2.CTRLA = TCB_CLKSEL_EVENT_gc | TCB_ENABLE_bm;
 
@@ -93,7 +93,7 @@ void ccl_init(void)
     CCL.LUT0CTRLA = CCL_FILTSEL_FILTER_gc | CCL_CLKSRC_CLKPER_gc | CCL_ENABLE_bm;
 
 #ifdef CCLDEBUG
-    // LUT2/3 sequencer output PD3  !!! DEBUG ONLY !!!
+    // LUT2/3 sequencer output PD3 !!! DEBUG ONLY !!!
     PORTD.DIRSET = PIN3_bm;
 #endif
 

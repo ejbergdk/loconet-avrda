@@ -3,7 +3,7 @@
  *
  * Created: 31-05-2020 11:08:35
  *  Author: Mikael Ejberg Pedersen
- */ 
+ */
 
 
 #ifndef HAL_LN_H_
@@ -26,21 +26,21 @@ typedef enum
 /**
  * Callback type for tx done.
  */
-typedef void (hal_ln_tx_done_cb)(void *, hal_ln_result_t res);
+typedef void    (hal_ln_tx_done_cb) (void *, hal_ln_result_t res);
 
 /**
  * Init LocoNet library.
  *
  * Call once from main program, before interrupts are enabled.
  */
-extern void         hal_ln_init(void);
+extern void     hal_ln_init(void);
 
 /**
  * Update LocoNet library.
  *
  * Call regularly from mainloop. No special timing constraints.
  */
-extern void         hal_ln_update(void);
+extern void     hal_ln_update(void);
 
 /**
  * Get pointer to an available LocoNet packet.
@@ -51,14 +51,14 @@ extern void         hal_ln_update(void);
  *
  * @return Pointer to LocoNet packet, or NULL if none is available.
  */
-extern lnpacket_t  *hal_ln_packet_get(void);
+extern lnpacket_t *hal_ln_packet_get(void);
 
 /**
  * Return LocoNet packet to pool of free packets.
  *
  * @param p Pointer to LocoNet packet to free.
  */
-extern void         hal_ln_packet_free(lnpacket_t *p);
+extern void     hal_ln_packet_free(lnpacket_t *p);
 
 /**
  * Length of LocoNet packet.
@@ -68,7 +68,7 @@ extern void         hal_ln_packet_free(lnpacket_t *p);
  * @param p Pointer to LocoNet packet.
  * @return  LocoNet packet length, including checksum.
  */
-extern uint8_t      hal_ln_packet_len(const lnpacket_t *packet);
+extern uint8_t  hal_ln_packet_len(const lnpacket_t *packet);
 
 /**
  * Send LocoNet packet.
@@ -87,7 +87,7 @@ extern uint8_t      hal_ln_packet_len(const lnpacket_t *packet);
  * @param ctx      Pointer to context data, that will be passed on to
  *                 the callback function.
  */
-extern void         hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, void *ctx);
+extern void     hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, void *ctx);
 
 /**
  * Receive LocoNet packet.
@@ -98,7 +98,7 @@ extern void         hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, voi
  *
  * @return Pointer to received LocoNet packet, or NULL if none is available.
  */
-extern lnpacket_t  *hal_ln_receive(void);
+extern lnpacket_t *hal_ln_receive(void);
 
 
 /************************************************************************/
@@ -106,6 +106,6 @@ extern lnpacket_t  *hal_ln_receive(void);
 /************************************************************************/
 extern const __flash char cmdln_name[];
 extern const __flash char cmdln_help[];
-extern void         ln_cmd(uint8_t argc, char *argv[]);
+extern void     ln_cmd(uint8_t argc, char *argv[]);
 
 #endif /* HAL_LN_H_ */

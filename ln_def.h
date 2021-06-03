@@ -3,7 +3,7 @@
  *
  * Created: 08-02-2021 17:05:05
  *  Author: Mikael Ejberg Pedersen
- */ 
+ */
 
 
 #ifndef LN_DEF_H_
@@ -98,8 +98,8 @@ typedef struct
     uint8_t         adrl:7;
     uint8_t         zero1:1;
     uint8_t         adrh:4;
-    uint8_t         lt:1;   // L if sel=1, T if sel=0
-    uint8_t         ic:1;   // I if sel=1, C if sel=0
+    uint8_t         lt:1;       // L if sel=1, T if sel=0
+    uint8_t         ic:1;       // I if sel=1, C if sel=0
     uint8_t         sel:1;
     uint8_t         zero2:1;
 } lnpacket_sw_rep_t;
@@ -205,20 +205,20 @@ typedef struct
  */
 typedef union
 {
-    uint8_t                 raw[LNPACKET_SIZE_MAX];
-    lnpacket_hdr_t          hdr;
-    lnpacket_adr_t          adr;
-    lnpacket_sw_t           sw;
-    lnpacket_sw_rep_t       sw_rep;
-    lnpacket_input_rep_t    input_rep;
-    lnpacket_long_ack_t     long_ack;
-    lnpacket_slot_stat1_t   slot_stat1;
+    uint8_t         raw[LNPACKET_SIZE_MAX];
+    lnpacket_hdr_t  hdr;
+    lnpacket_adr_t  adr;
+    lnpacket_sw_t   sw;
+    lnpacket_sw_rep_t sw_rep;
+    lnpacket_input_rep_t input_rep;
+    lnpacket_long_ack_t long_ack;
+    lnpacket_slot_stat1_t slot_stat1;
     lnpacket_consist_func_t consist_func;
     lnpacket_unlink_slots_t unlink_slots;
-    lnpacket_link_slots_t   link_slots;
-    lnpacket_move_slots_t   move_slots;
-    lnpacket_rq_sl_data_t   rq_sl_data;
-    lnpacket_loco_adr_t     loco_adr;
+    lnpacket_link_slots_t link_slots;
+    lnpacket_move_slots_t move_slots;
+    lnpacket_rq_sl_data_t rq_sl_data;
+    lnpacket_loco_adr_t loco_adr;
 } lnpacket_t;
 
 

@@ -3,7 +3,7 @@
  *
  * Created: 07-05-2021 17:40:37
  *  Author: Mikael Ejberg Pedersen
- */ 
+ */
 
 #ifndef FIFO_H_
 #define FIFO_H_
@@ -24,10 +24,10 @@ typedef struct fifo_t_
  * Use one per queue.
  * Initialize to NULL before using.
  */
-typedef struct  
+typedef struct
 {
-    fifo_t *head;
-    fifo_t *tail;
+    fifo_t         *head;
+    fifo_t         *tail;
 } fifo_queue_t;
 
 
@@ -37,8 +37,8 @@ typedef struct
  * @param queue Pointer to queue handle.
  * @param p     Pointer to fifo data element.
  */
-static inline __attribute__((always_inline))
-void fifo_queue_put_irq(fifo_queue_t *queue, fifo_t *p)
+__attribute__((always_inline))
+static inline void fifo_queue_put_irq(fifo_queue_t *queue, fifo_t *p)
 {
     p->next = NULL;
     if (queue->tail)
@@ -58,10 +58,10 @@ void fifo_queue_put_irq(fifo_queue_t *queue, fifo_t *p)
  * @param queue Pointer to queue handle.
  * @return      Pointer to fifo data element, or NULL if queue is empty.
  */
-static inline __attribute__((always_inline))
-fifo_t * fifo_queue_get_irq(fifo_queue_t *queue)
+__attribute__((always_inline))
+static inline fifo_t *fifo_queue_get_irq(fifo_queue_t *queue)
 {
-    fifo_t *p;
+    fifo_t         *p;
 
     p = queue->head;
     if (p)
@@ -80,7 +80,7 @@ fifo_t * fifo_queue_get_irq(fifo_queue_t *queue)
  * @param queue Pointer to queue handle.
  * @param p     Pointer to fifo data element.
  */
-extern void fifo_queue_put(fifo_queue_t *queue, fifo_t *p);
+extern void     fifo_queue_put(fifo_queue_t *queue, fifo_t *p);
 
 /**
  * Get an item from a queue.
@@ -88,7 +88,7 @@ extern void fifo_queue_put(fifo_queue_t *queue, fifo_t *p);
  * @param queue Pointer to queue handle.
  * @return      Pointer to fifo data element, or NULL if queue is empty.
  */
-extern fifo_t * fifo_queue_get(fifo_queue_t *queue);
+extern fifo_t  *fifo_queue_get(fifo_queue_t *queue);
 
 /**
  * Get number of elements in queue.
@@ -96,6 +96,6 @@ extern fifo_t * fifo_queue_get(fifo_queue_t *queue);
  * @param queue Pointer to queue handle.
  * @return      Number of data elements in queue.
  */
-extern uint8_t fifo_queue_size(fifo_queue_t *queue);
+extern uint8_t  fifo_queue_size(fifo_queue_t *queue);
 
 #endif /* FIFO_H_ */
