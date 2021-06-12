@@ -5,6 +5,11 @@
  *  Author: Mikael Ejberg Pedersen
  */
 
+/*
+ * Make sure _delay_us rounds down, not up.
+ */
+#define __DELAY_ROUND_DOWN__ 1
+
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
@@ -13,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <util/atomic.h>
+#include <util/delay.h>
 #include "ac.h"
 #include "ccl.h"
 #include "fifo.h"
@@ -146,23 +152,6 @@ static uint8_t  tx_attempt;
 
 
 /*
- * Start transmitting packet.
- */
-__attribute__((always_inline))
-static inline void tx_start(void)
-{
-    ccl_collision_clear();
-    PORTA.OUTSET = PIN4_bm;     // XDIR = 1
-    USART0.TXDATAL = tx_buf->lndata.raw[0];
-    tx_idx = 1;
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-    {
-        USART0.CTRLA |= USART_DREIE_bm; // Enable data register empty interrupt
-    }
-    tx_attempt++;
-}
-
-/*
  * Set timer for next transmission attempt.
  */
 __attribute__((always_inline))
@@ -173,6 +162,37 @@ static inline void tx_arm_timer(uint16_t cnt)
     TCB2.CCMP = cnt;
     TCB2.INTFLAGS = TCB_CAPT_bm;        // Clear capture interrupt flag
     TCB2.INTCTRL = TCB_CAPT_bm; // Enable capture interrupt
+}
+
+/*
+ * Start transmitting packet.
+ */
+__attribute__((always_inline))
+static inline void tx_start(void)
+{
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+        // Restart baudrate generator
+        USART0.BAUD = BAUD_REG;
+
+        // Wait 1 µs less than one baudrate generator time tick
+        _delay_us(1E6 / (16 * BAUDRATE) - 1);
+
+        // Re-check if transmit is still allowed
+        if (TCB2.STATUS & TCB_RUN_bm)
+        {
+            ccl_collision_clear();
+            PORTA.OUTSET = PIN4_bm;     // XDIR = 1
+            USART0.TXDATAL = tx_buf->lndata.raw[0];
+            tx_idx = 1;
+            USART0.CTRLA |= USART_DREIE_bm;     // Enable data register empty interrupt
+            tx_attempt++;
+        }
+        else                    // if not, set timer to start tx when it is allowed
+        {
+            tx_arm_timer(tx_delay);
+        }
+    }
 }
 
 /*
@@ -317,7 +337,7 @@ static void tx_update(void)
     tx_attempt = 0;
 
     // Check if transmit is allowed now
-    if ((TCB2.CNT >= tx_delay) && (TCB2.STATUS & TCB_RUN_bm))
+    if ((TCB2.STATUS & TCB_RUN_bm) && (TCB2.CNT >= tx_delay))
         tx_start();
     else                        // if not, set timer to start tx when it is allowed
         tx_arm_timer(tx_delay);
