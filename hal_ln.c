@@ -399,6 +399,14 @@ __attribute__((flatten)) ISR(USART0_RXC_vect)
 #endif
     }
 
+#ifndef LNECHO
+    if (PORTA.IN & PIN4_bm)     // XDIR
+    {
+        state = RXS_IDLE;       // Discard received echo of our own tx
+        return;
+    }
+#endif
+
     if (data & 0x80)
     {
         // Always restart reception when receiving opcode
