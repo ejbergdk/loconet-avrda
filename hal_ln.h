@@ -9,6 +9,7 @@
 #ifndef HAL_LN_H_
 #define HAL_LN_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include "ln_def.h"
@@ -99,6 +100,17 @@ extern void     hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, void *c
  * @return Pointer to received LocoNet packet, or NULL if none is available.
  */
 extern lnpacket_t *hal_ln_receive(void);
+
+/**
+ * Get tx collision status.
+ *
+ * If one or more tx collisions has happened, the next call to this function
+ * will return true and then clear its internal status flag. Subsequent calls
+ * will return false, unless new collisions has happened.
+ *
+ * @return true if tx collision has happened since last call.
+ */
+extern bool     hal_ln_tx_collision(void);
 
 
 /************************************************************************/
