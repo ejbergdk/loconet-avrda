@@ -13,6 +13,7 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -149,6 +150,7 @@ static uint8_t  tx_len;
 static uint8_t  tx_idx;
 static uint16_t tx_delay;
 static uint8_t  tx_attempt;
+static bool     tx_collision_flag = false;
 
 
 /*
@@ -243,6 +245,7 @@ ISR(USART0_TXC_vect)
 
     if (ccl_collision())
     {
+        tx_collision_flag = true;
 #ifdef LNSTAT
         stat.tx_collisions++;
 #endif
@@ -360,6 +363,19 @@ static void tx_done_update(void)
         packet->cb(packet->ctx, packet->res);   // Tx done callback
 
     fifo_queue_put(&queue_free, packetfifo);
+}
+
+bool hal_ln_tx_collision(void)
+{
+    bool            collision;
+
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+        collision = tx_collision_flag;
+        tx_collision_flag = false;
+    }
+
+    return collision;
 }
 
 
