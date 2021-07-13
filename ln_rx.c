@@ -1,9 +1,9 @@
 /*
-* ln_rx.c
-*
-* Created: 07-02-2021 15:25:17
-*  Author: Mikael Ejberg Pedersen
-*/
+ * ln_rx.c
+ *
+ * Created: 07-02-2021 15:25:17
+ *  Author: Mikael Ejberg Pedersen
+ */
 
 #include <avr/pgmspace.h>
 #include <stdint.h>

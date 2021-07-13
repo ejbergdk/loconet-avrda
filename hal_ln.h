@@ -27,7 +27,7 @@ typedef enum
 /**
  * Callback type for tx done.
  */
-typedef void    (hal_ln_tx_done_cb) (void *, hal_ln_result_t res);
+typedef void    (hal_ln_tx_done_cb_t) (void *ctx, hal_ln_result_t res);
 
 /**
  * Init LocoNet library.
@@ -88,7 +88,7 @@ extern uint8_t  hal_ln_packet_len(const lnpacket_t *packet);
  * @param ctx      Pointer to context data, that will be passed on to
  *                 the callback function.
  */
-extern void     hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, void *ctx);
+extern void     hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb_t * cb, void *ctx);
 
 /**
  * Receive LocoNet packet.
