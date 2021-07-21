@@ -69,7 +69,7 @@ static stat_t   stat;
 typedef struct
 {
     fifo_t          fifo;       // Fifo data
-    hal_ln_tx_done_cb *cb;      // Callback function pointer
+    hal_ln_tx_done_cb_t *cb;    // Callback function pointer
     void           *ctx;        // Callback context pointer
     hal_ln_result_t res;        // Result code
     lnpacket_t      lndata;     // LocoNet data
@@ -292,7 +292,7 @@ ISR(USART0_TXC_vect)
 #endif
 }
 
-void hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb *cb, void *ctx)
+void hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb_t * cb, void *ctx)
 {
     uint8_t         len, cksum;
     uint8_t        *data;
