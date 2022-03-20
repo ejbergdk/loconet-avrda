@@ -222,8 +222,6 @@ ISR(USART0_DRE_vect)
  */
 __attribute__((flatten)) ISR(USART0_TXC_vect)
 {
-    uint8_t         fail = 0;
-
     PORTA.OUTCLR = PIN4_bm;     // XDIR = 0
     USART0.CTRLA &= ~USART_TXCIE_bm;
 
@@ -247,22 +245,16 @@ __attribute__((flatten)) ISR(USART0_TXC_vect)
             return;
         }
 
-        fail = 1;
-    }
-
-    // Determine if packet tx was successful or not
-    if (fail == 0)
-    {
-        tx_buf->res = HAL_LN_SUCCESS;
+        tx_buf->res = HAL_LN_FAIL;
 #ifdef LNSTAT
-        stat.tx_success++;
+        stat.tx_fail++;
 #endif
     }
     else
     {
-        tx_buf->res = HAL_LN_FAIL;
+        tx_buf->res = HAL_LN_SUCCESS;
 #ifdef LNSTAT
-        stat.tx_fail++;
+        stat.tx_success++;
 #endif
     }
 
