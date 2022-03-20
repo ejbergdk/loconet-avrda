@@ -32,49 +32,6 @@ typedef struct
 
 
 /**
- * Inline version of fifo_queue_put for use in interrupts.
- *
- * @param queue Pointer to queue handle.
- * @param p     Pointer to fifo data element.
- */
-__attribute__((always_inline))
-static inline void fifo_queue_put_irq(fifo_queue_t *queue, fifo_t *p)
-{
-    p->next = NULL;
-    if (queue->tail)
-    {
-        queue->tail->next = p;
-        queue->tail = p;
-    }
-    else
-    {
-        queue->head = queue->tail = p;
-    }
-}
-
-/**
- * Inline version of fifo_queue_get for use in interrupts.
- *
- * @param queue Pointer to queue handle.
- * @return      Pointer to fifo data element, or NULL if queue is empty.
- */
-__attribute__((always_inline))
-static inline fifo_t *fifo_queue_get_irq(fifo_queue_t *queue)
-{
-    fifo_t         *p;
-
-    p = queue->head;
-    if (p)
-    {
-        queue->head = p->next;
-        if (!(queue->head))
-            queue->tail = NULL;
-    }
-
-    return p;
-}
-
-/**
  * Put an item on a queue.
  *
  * @param queue Pointer to queue handle.

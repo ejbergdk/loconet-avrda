@@ -86,20 +86,6 @@ static fifo_queue_t queue_tx = { NULL, NULL };
 static fifo_queue_t queue_done = { NULL, NULL };
 
 
-/*
- * Inline version of hal_ln_packet_get for use in interrupts.
- */
-__attribute__((always_inline))
-static inline packet_t *packet_get_irq(void)
-{
-    fifo_t         *p;
-
-    p = fifo_queue_get_irq(&queue_free);
-    if (p)
-        return PACKET_FROM_FIFO(p);
-    return NULL;
-}
-
 lnpacket_t     *hal_ln_packet_get(void)
 {
     fifo_t         *p;
@@ -156,8 +142,7 @@ static bool     tx_collision_flag = false;
 /*
  * Set timer for next transmission attempt.
  */
-__attribute__((always_inline))
-static inline void tx_arm_timer(uint16_t cnt)
+static void tx_arm_timer(uint16_t cnt)
 {
     if (TCB2.CNT >= (cnt - 1))
         cnt = TCB2.CNT + 2;
@@ -169,8 +154,7 @@ static inline void tx_arm_timer(uint16_t cnt)
 /*
  * Start transmitting packet.
  */
-__attribute__((always_inline))
-static inline void tx_start(void)
+static void tx_start(void)
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
@@ -201,7 +185,7 @@ static inline void tx_start(void)
  * Timer interrupt.
  * CD BACKOFF time has elapsed. Start transmitting.
  */
-ISR(TCB2_INT_vect)
+__attribute__((flatten)) ISR(TCB2_INT_vect)
 {
     TCB2.INTCTRL = 0;           // Disable capture interrupt
     tx_start();
@@ -236,7 +220,7 @@ ISR(USART0_DRE_vect)
  * TX complete interrupt.
  * End packet transmission and check for collision.
  */
-ISR(USART0_TXC_vect)
+__attribute__((flatten)) ISR(USART0_TXC_vect)
 {
     uint8_t         fail = 0;
 
@@ -283,7 +267,7 @@ ISR(USART0_TXC_vect)
     }
 
     // Put sent packet in done queue, for further processing outside interrupt
-    fifo_queue_put_irq(&queue_done, &tx_buf->fifo);
+    fifo_queue_put(&queue_done, &tx_buf->fifo);
     tx_buf = NULL;
 
 #ifdef LNSTAT
@@ -395,7 +379,7 @@ typedef enum
  */
 __attribute__((flatten)) ISR(USART0_RXC_vect)
 {
-    static packet_t *buf = NULL;
+    static lnpacket_t *buf = NULL;
     static rx_state_t state = RXS_IDLE;
     static uint8_t  idx = 0;
     static uint8_t  cksum;
@@ -442,7 +426,7 @@ __attribute__((flatten)) ISR(USART0_RXC_vect)
     default:
         if (!buf)
         {
-            buf = packet_get_irq();
+            buf = hal_ln_packet_get();
             if (!buf)
             {
 #ifdef LNSTAT
@@ -453,7 +437,7 @@ __attribute__((flatten)) ISR(USART0_RXC_vect)
         }
         if (data & 0x80)
         {
-            buf->lndata.raw[0] = data;
+            buf->raw[0] = data;
             cksum = data;
             idx = 1;
             state = RXS_DATA;
@@ -467,17 +451,17 @@ __attribute__((flatten)) ISR(USART0_RXC_vect)
         break;
 
     case RXS_DATA:
-        buf->lndata.raw[idx++] = data;
+        buf->raw[idx++] = data;
         cksum ^= data;
         if (idx == 2)
-            len = hal_ln_packet_len(&buf->lndata);
+            len = hal_ln_packet_len(buf);
         if (idx >= len)
         {
             // Full packet received. Check checksum
             if (cksum == 0xff)
             {
                 // Packet valid. Put in rx queue
-                fifo_queue_put_irq(&queue_rx, &buf->fifo);
+                fifo_queue_put(&queue_rx, &PACKET_FROM_LN(buf)->fifo);
                 buf = NULL;
 #ifdef LNSTAT
                 stat.rx_success++;
