@@ -14,7 +14,16 @@ void fifo_queue_put(fifo_queue_t *queue, fifo_t *p)
 {
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
-        fifo_queue_put_irq(queue, p);
+        p->next = NULL;
+        if (queue->tail)
+        {
+            queue->tail->next = p;
+            queue->tail = p;
+        }
+        else
+        {
+            queue->head = queue->tail = p;
+        }
     }
 }
 
@@ -24,7 +33,13 @@ fifo_t         *fifo_queue_get(fifo_queue_t *queue)
 
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
     {
-        p = fifo_queue_get_irq(queue);
+        p = queue->head;
+        if (p)
+        {
+            queue->head = p->next;
+            if (!(queue->head))
+                queue->tail = NULL;
+        }
     }
 
     return p;
