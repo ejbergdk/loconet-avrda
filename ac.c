@@ -10,6 +10,8 @@
 
 void ac_init(void)
 {
+    // Disable port pin digital input buffer
+    PORTD.PIN2CTRL = PORT_ISC_INPUT_DISABLE_gc;
     // Setup Vref
     VREF.ACREF = VREF_REFSEL_1V024_gc;
     // Setup AC
