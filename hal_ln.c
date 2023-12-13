@@ -43,6 +43,7 @@ typedef struct
     uint16_t        tx_fail;
     uint16_t        tx_collisions;
     uint16_t        rx_success;
+    uint16_t        rx_success_large;
     uint16_t        rx_checksum;
     uint16_t        rx_partial;
     uint16_t        rx_extradata;
@@ -61,7 +62,9 @@ static stat_t   stat;
 /**
  * Number of LocoNet packets allocated.
  */
+#ifndef LNPACKET_CNT
 #define LNPACKET_CNT    8
+#endif
 
 /**
  * Packet structure for LocoNet and housekeeping data.
@@ -274,7 +277,22 @@ void hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb_t * cb, void *ctx)
     uint8_t        *data;
     packet_t       *packet;
 
-    len = hal_ln_packet_len(lnpacket) - 2;
+    packet = PACKET_FROM_LN(lnpacket);
+    packet->cb = cb;
+    packet->ctx = ctx;
+
+    len = hal_ln_packet_len(lnpacket);
+    if (len > LNPACKET_SIZE_MAX)
+    {
+        packet->res = HAL_LN_FAIL;
+#ifdef LNSTAT
+        stat.tx_fail++;
+#endif
+        fifo_queue_put(&queue_done, &packet->fifo);
+        return;
+    }
+
+    len -= 2;
     cksum = ~lnpacket->raw[0];
     data = &lnpacket->raw[1];
     while (len--)
@@ -284,9 +302,6 @@ void hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb_t * cb, void *ctx)
     }
     *data = cksum;
 
-    packet = PACKET_FROM_LN(lnpacket);
-    packet->cb = cb;
-    packet->ctx = ctx;
     fifo_queue_put(&queue_tx, &packet->fifo);
 }
 
@@ -443,7 +458,9 @@ __attribute__((flatten)) ISR(USART0_RXC_vect)
         break;
 
     case RXS_DATA:
-        buf->raw[idx++] = data;
+        if (idx < LNPACKET_SIZE_MAX)
+            buf->raw[idx] = data;
+        idx++;
         cksum ^= data;
         if (idx == 2)
             len = hal_ln_packet_len(buf);
@@ -452,12 +469,23 @@ __attribute__((flatten)) ISR(USART0_RXC_vect)
             // Full packet received. Check checksum
             if (cksum == 0xff)
             {
-                // Packet valid. Put in rx queue
-                fifo_queue_put(&queue_rx, &PACKET_FROM_LN(buf)->fifo);
-                buf = NULL;
+                // Packet valid
+                if (idx < LNPACKET_SIZE_MAX)
+                {
+                    // Put in rx queue (packet fits in buffer)
+                    fifo_queue_put(&queue_rx, &PACKET_FROM_LN(buf)->fifo);
+                    buf = NULL;
 #ifdef LNSTAT
-                stat.rx_success++;
+                    stat.rx_success++;
 #endif
+                }
+                else
+                {
+                    // Packet correctly received, but didn't fit in reduced size buffer
+#ifdef LNSTAT
+                    stat.rx_success_large++;
+#endif
+                }
             }
             else
             {
@@ -618,6 +646,7 @@ void ln_cmd(uint8_t argc, char *argv[])
             printf_P(PSTR(" Max attemps for tx: %u\n"), s.tx_max_attempts);
             printf_P(PSTR("RX:\n"));
             printf_P(PSTR(" Packets received:   %u\n"), s.rx_success);
+            printf_P(PSTR(" Packets too large:  %u\n"), s.rx_success_large);
             printf_P(PSTR(" Checksum errors:    %u\n"), s.rx_checksum);
             printf_P(PSTR(" Partial packets:    %u\n"), s.rx_partial);
             printf_P(PSTR(" Extra bytes:        %u\n"), s.rx_extradata);

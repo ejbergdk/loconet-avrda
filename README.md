@@ -22,6 +22,8 @@ CCLDEBUG | Outputs sequencer 1 on pin PD3 (collision detected). Useful for logic
 LNSTAT | Collect statistical data on LocoNet comms. Read stat with shell cmd `ln s`
 LNMONITOR | Write all received LocoNet data on debug shell
 LNECHO | Receive and process the echo of data sent from the library itself
+LNPACKET_SIZE_MAX | Use small LN packets to conserve memory. Full packet size is used if not set
+LNPACKET_CNT | Number of LN packets in RAM. Defaults to 8 if not set
 
 And of course F_CPU should always be defined to the AVR's clock speed (in Hz).
 This code has only been tested with the AVR running at 24 MHz.
