@@ -51,7 +51,9 @@
 /*
  * Largest size for a LocoNet package, including op and cksum.
  */
+#ifndef LNPACKET_SIZE_MAX
 #define LNPACKET_SIZE_MAX   127
+#endif
 
 /*
  * LocoNet packet header.
