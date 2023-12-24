@@ -470,7 +470,7 @@ __attribute__((flatten)) ISR(USART0_RXC_vect)
             if (cksum == 0xff)
             {
                 // Packet valid
-                if (idx < LNPACKET_SIZE_MAX)
+                if (idx <= LNPACKET_SIZE_MAX)
                 {
                     // Put in rx queue (packet fits in buffer)
                     fifo_queue_put(&queue_rx, &PACKET_FROM_LN(buf)->fifo);
@@ -623,6 +623,12 @@ void ln_cmd(uint8_t argc, char *argv[])
             }
 
             len = argc - 2;
+            if (len > LNPACKET_SIZE_MAX)
+            {
+                printf_P(PSTR("Too much data for lnpacket\n"));
+                return;
+            }
+
             for (uint8_t i = 0; i < len; i++)
                 txdata->raw[i] = strtoul(argv[i + 2], NULL, 0);
             hal_ln_send(txdata, NULL, NULL);
