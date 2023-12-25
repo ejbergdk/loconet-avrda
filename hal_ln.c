@@ -35,6 +35,8 @@
 /************************************************************************/
 
 #ifdef LNSTAT
+#include <string.h>
+
 typedef struct
 {
     uint8_t         tx_max_attempts;
@@ -561,7 +563,7 @@ void ln_cmd(uint8_t argc, char *argv[])
         printf_P(PSTR("Missing argument\nArguments:\n"));
         printf_P(PSTR(" i <adr> <0/1> - Send input rep (feedback)\n"));
 #ifdef LNSTAT
-        printf_P(PSTR(" s - Stat\n"));
+        printf_P(PSTR(" s[r] - Stat. r=reset\n"));
 #endif
         printf_P(PSTR(" t <data1> [<datan>] - Tx packet\n"));
         return;
@@ -640,29 +642,40 @@ void ln_cmd(uint8_t argc, char *argv[])
         {
             stat_t          s;
 
-            ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+            if (argv[1][1] == 'r')
             {
-                s = stat;
+                ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+                {
+                    memset(&stat, 0, sizeof(stat));
+                }
+                printf_P(PSTR("Statistics reset\n"));
             }
-            printf_P(PSTR("TX:\n"));
-            printf_P(PSTR(" Packets scheduled:  %u\n"), s.tx_total);
-            printf_P(PSTR(" Packets sent:       %u\n"), s.tx_success);
-            printf_P(PSTR(" Packets tx fail:    %u\n"), s.tx_fail);
-            printf_P(PSTR(" Collisions:         %u\n"), s.tx_collisions);
-            printf_P(PSTR(" Max attemps for tx: %u\n"), s.tx_max_attempts);
-            printf_P(PSTR("RX:\n"));
-            printf_P(PSTR(" Packets received:   %u\n"), s.rx_success);
-            printf_P(PSTR(" Packets too large:  %u\n"), s.rx_success_large);
-            printf_P(PSTR(" Checksum errors:    %u\n"), s.rx_checksum);
-            printf_P(PSTR(" Partial packets:    %u\n"), s.rx_partial);
-            printf_P(PSTR(" Extra bytes:        %u\n"), s.rx_extradata);
-            printf_P(PSTR(" Collisions:         %u\n"), s.rx_collisions);
-            printf_P(PSTR(" No memory:          %u\n"), s.rx_nomem);
-            printf_P(PSTR("Mem:\n"));
-            printf_P(PSTR(" Free packets:       %u\n"), fifo_queue_size(&queue_free));
-            printf_P(PSTR(" In tx queue:        %u\n"), fifo_queue_size(&queue_tx));
-            printf_P(PSTR(" In rx queue:        %u\n"), fifo_queue_size(&queue_rx));
-            printf_P(PSTR(" In done queue:      %u\n"), fifo_queue_size(&queue_done));
+            else
+            {
+                ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+                {
+                    s = stat;
+                }
+                printf_P(PSTR("TX:\n"));
+                printf_P(PSTR(" Packets scheduled:  %u\n"), s.tx_total);
+                printf_P(PSTR(" Packets sent:       %u\n"), s.tx_success);
+                printf_P(PSTR(" Packets tx fail:    %u\n"), s.tx_fail);
+                printf_P(PSTR(" Collisions:         %u\n"), s.tx_collisions);
+                printf_P(PSTR(" Max attemps for tx: %u\n"), s.tx_max_attempts);
+                printf_P(PSTR("RX:\n"));
+                printf_P(PSTR(" Packets received:   %u\n"), s.rx_success);
+                printf_P(PSTR(" Packets too large:  %u\n"), s.rx_success_large);
+                printf_P(PSTR(" Checksum errors:    %u\n"), s.rx_checksum);
+                printf_P(PSTR(" Partial packets:    %u\n"), s.rx_partial);
+                printf_P(PSTR(" Extra bytes:        %u\n"), s.rx_extradata);
+                printf_P(PSTR(" Collisions:         %u\n"), s.rx_collisions);
+                printf_P(PSTR(" No memory:          %u\n"), s.rx_nomem);
+                printf_P(PSTR("Mem:\n"));
+                printf_P(PSTR(" Free packets:       %u\n"), fifo_queue_size(&queue_free));
+                printf_P(PSTR(" In tx queue:        %u\n"), fifo_queue_size(&queue_tx));
+                printf_P(PSTR(" In rx queue:        %u\n"), fifo_queue_size(&queue_rx));
+                printf_P(PSTR(" In done queue:      %u\n"), fifo_queue_size(&queue_done));
+            }
             break;
         }
 #endif
