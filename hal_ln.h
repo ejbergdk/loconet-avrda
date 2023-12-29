@@ -112,12 +112,4 @@ extern lnpacket_t *hal_ln_receive(void);
  */
 extern bool     hal_ln_tx_collision(void);
 
-
-/************************************************************************/
-/* Debug command related stuff. Not to be used elsewhere.               */
-/************************************************************************/
-extern const __flash char cmdln_name[];
-extern const __flash char cmdln_help[];
-extern void     ln_cmd(uint8_t argc, char *argv[]);
-
 #endif /* HAL_LN_H_ */

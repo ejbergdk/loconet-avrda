@@ -553,10 +553,11 @@ void hal_ln_update(void)
 /* Debug command related stuff.                                         */
 /************************************************************************/
 
-const __flash char cmdln_name[] = "ln";
-const __flash char cmdln_help[] = "Loconet test";
+#if __has_include("avr-shell-cmd/cmd.h")
 
-void ln_cmd(uint8_t argc, char *argv[])
+#include "avr-shell-cmd/cmd.h"
+
+static void lnCmd(uint8_t argc, char *argv[])
 {
     if (argc < 2)
     {
@@ -685,3 +686,7 @@ void ln_cmd(uint8_t argc, char *argv[])
         break;
     }
 }
+
+CMD(ln, "Loconet test");
+
+#endif
