@@ -35,8 +35,6 @@
 /************************************************************************/
 
 #ifdef LNSTAT
-#include <string.h>
-
 typedef struct
 {
     uint8_t         tx_max_attempts;
@@ -109,9 +107,9 @@ void hal_ln_packet_free(lnpacket_t *p)
     fifo_queue_put(&queue_free, &packet->fifo);
 }
 
-uint8_t hal_ln_packet_len(const lnpacket_t *packet)
+uint8_t hal_ln_packet_len(const lnpacket_t *p)
 {
-    switch (packet->hdr.op & 0x60)
+    switch (p->hdr.op & 0x60)
     {
     case 0x00:
     default:
@@ -121,7 +119,7 @@ uint8_t hal_ln_packet_len(const lnpacket_t *packet)
     case 0x40:
         return 6;
     case 0x60:
-        return packet->hdr.len;
+        return p->hdr.len;
     }
 }
 
@@ -556,6 +554,10 @@ void hal_ln_update(void)
 #if __has_include("avr-shell-cmd/cmd.h")
 
 #include "avr-shell-cmd/cmd.h"
+
+#ifdef LNSTAT
+#include <string.h>
+#endif
 
 static void lnCmd(uint8_t argc, char *argv[])
 {
