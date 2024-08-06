@@ -48,7 +48,7 @@ extern void     hal_ln_update(void);
  *
  * The LocoNet packet is not empty, but may contain data from earlier use.
  * After use, the packet must be freed by either using hal_ln_packet_free,
- * or sending it on to another function thet eventually frees it.
+ * or sending it on to another function that eventually frees it.
  *
  * @return Pointer to LocoNet packet, or NULL if none is available.
  */
@@ -64,12 +64,12 @@ extern void     hal_ln_packet_free(lnpacket_t *p);
 /**
  * Length of LocoNet packet.
  *
- * Returns the length of a LocoNet packet (if packet contains valid data).
+ * Returns the length of a LocoNet packet (packet must contain valid data).
  *
  * @param p Pointer to LocoNet packet.
  * @return  LocoNet packet length, including checksum.
  */
-extern uint8_t  hal_ln_packet_len(const lnpacket_t *packet);
+extern uint8_t  hal_ln_packet_len(const lnpacket_t *p);
 
 /**
  * Send LocoNet packet.
