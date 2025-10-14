@@ -4,13 +4,22 @@ Experimental library providing LocoNet communication on AVR DA processors.
 This library is used for ongoing tests and experiments of interfacing a Microchip AVR DA processor to a LocoNet bus, using as little hardware as possible.
 See the [project homepage](https://www.ejberg.dk/portfolio/loconet-avr-da/) for more information on the hardware side.
 
-hal_ln.\* and ln_def.h are the main library files. ac.\* ccl.\* and fifo.\* are required files, but should not be accessed from the outside world.
+This is NOT a stand-alone program that works as is. It is a library that is to be included in a program you write.  
+See my other repositories for examples:  
+[loconet-avrda-demo](https://github.com/ejbergdk/loconet-avrda-demo) is a small demonstration using this library.  
+[loconet-routectrl3](https://github.com/ejbergdk/loconet-routectrl3) is a larger project, that can be used to control train routes.
 
-ln_rx.\* are **optional** and intended to ease reception of LocoNet packets by decoding packet parameters and calling separate functions per packet opcode.
-Warning: ln_rx.\* are very much work in progress and may change drastically in its implementation.
+`hal_ln.*` and `ln_def.h` are the main library files you will be needing.  
+Include `hal_ln.h` in your main file, and call `hal_ln_init();` once when starting up, before global interrupts are enabled. Then call `hal_ln_update();` from your mainloop.  
+You can now either use the functions described in `hal_ln.h` directly to send and receive raw Loconet packets, or use the helper functions in `ln_rx.*` and `ln_tx.*` for easier receiving and transmitting of packets.
 
-ln_tx.\* are **optional** and intended to ease transmission of LocoNet packets by encoding packet parameters (the reverse of ln_rx.\*).
-Warning: ln_tx.\* are very much work in progress and may change drastically in its implementation.
+`ac.*` `ccl.*` and `fifo.*` are required files, but should not be accessed from the outside world, i.e. your program.
+
+`ln_rx.*` are **optional** and intended to ease reception of LocoNet packets by decoding packet parameters and calling separate functions per packet opcode.
+Warning: `ln_rx.*` are very much work in progress and may change drastically in its implementation.
+
+`ln_tx.*` are **optional** and intended to ease transmission of LocoNet packets by encoding packet parameters (the reverse of ln_rx.\*).
+Warning: `ln_tx.*` are very much work in progress and may change drastically in its implementation.
 
 ### Preprocessor defines
 Certain features of the library can be controlled by defining preprocessor macros.
