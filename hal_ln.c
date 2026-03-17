@@ -22,6 +22,7 @@
 #include <util/delay.h>
 #include "ac.h"
 #include "ccl.h"
+#include "configuration.h"
 #include "fifo.h"
 #include "hal_ln.h"
 #include "ln_def.h"
@@ -171,7 +172,7 @@ static void tx_start(void)
         if (TCB2.STATUS & TCB_RUN_bm)
         {
             ccl_collision_clear();
-            PORTA.OUTSET = PIN4_bm;     // XDIR = 1
+            XDIR_PORT.OUTSET = 1 << XDIR_PIN;   // XDIR = 1
             USART0.TXDATAL = tx_buf->lndata.raw[0];
             tx_idx = 1;
             USART0.CTRLA |= USART_DREIE_bm;     // Enable data register empty interrupt
@@ -225,7 +226,7 @@ ISR(USART0_DRE_vect)
  */
 __attribute__((flatten)) ISR(USART0_TXC_vect)
 {
-    PORTA.OUTCLR = PIN4_bm;     // XDIR = 0
+    XDIR_PORT.OUTCLR = 1 << XDIR_PIN;   // XDIR = 0
     USART0.CTRLA &= ~USART_TXCIE_bm;
 
     if (ccl_collision())
@@ -407,7 +408,7 @@ __attribute__((flatten)) ISR(USART0_RXC_vect)
     }
 
 #ifndef LNECHO
-    if (PORTA.IN & PIN4_bm)     // XDIR
+    if (XDIR_PORT.IN & (1 << XDIR_PIN)) // XDIR
     {
         state = RXS_IDLE;       // Discard received echo of our own tx
         return;
@@ -523,8 +524,8 @@ void hal_ln_init(void)
 
     // Init USART pins
     PORTA.DIRCLR = PIN1_bm;     // RX input
-    PORTA.OUTCLR = PIN4_bm;
-    PORTA.DIRSET = PIN4_bm;     // TX active (manual XDIR pin with less delay)
+    XDIR_PORT.OUTCLR = 1 << XDIR_PIN;
+    XDIR_PORT.DIRSET = 1 << XDIR_PIN;   // TX active (manual XDIR pin with less delay)
 
     // Init USART
     USART0.CTRLA = USART_RXCIE_bm | USART_RS485_DISABLE_gc;     // Enable rx complete interrupt

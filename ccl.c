@@ -10,24 +10,51 @@
 #include <stdlib.h>
 #include <avr/io.h>
 #include "ccl.h"
+#include "configuration.h"
 #include "hal_ln.h"
 
 
 void ccl_init(void)
 {
     // Event channels setup
-    // Ch0 UART 0 XDIR (PA4)
-    EVSYS.CHANNEL0 = EVSYS_CHANNEL0_PORTA_PIN4_gc;
+
+#if (XDIR_PORT_ID == 'A') || (XDIR_PORT_ID == 'B')
+
+    // Ch0 UART 0 XDIR
+#if XDIR_PORT_ID == 'A'
+    EVSYS.CHANNEL0 = EVSYS_CHANNEL0_PORTA_PIN0_gc + XDIR_PIN;
+#else
+    EVSYS.CHANNEL0 = EVSYS_CHANNEL0_PORTB_PIN0_gc + XDIR_PIN;
+#endif
     EVSYS.USERCCLLUT0A = 1;     // Channel 0
     EVSYS.USERCCLLUT3A = 1;     // Channel 0
-
-    // Ch1 AC1 out to TCB2 event in
-    EVSYS.CHANNEL1 = EVSYS_CHANNEL1_AC1_OUT_gc;
-    EVSYS.USERTCB2CAPT = 2;     // Channel 1
 
     // Ch2 LUT0 out to TCB0 event in
     EVSYS.CHANNEL2 = EVSYS_CHANNEL2_CCL_LUT0_gc;
     EVSYS.USERTCB0CAPT = 3;     // Channel 2
+
+#elif (XDIR_PORT_ID == 'C') || (XDIR_PORT_ID == 'D')
+
+    // Ch2 UART 0 XDIR
+#if XDIR_PORT_ID == 'C'
+    EVSYS.CHANNEL2 = EVSYS_CHANNEL2_PORTC_PIN0_gc + XDIR_PIN;
+#else
+    EVSYS.CHANNEL2 = EVSYS_CHANNEL2_PORTD_PIN0_gc + XDIR_PIN;
+#endif
+    EVSYS.USERCCLLUT0A = 3;     // Channel 2
+    EVSYS.USERCCLLUT3A = 3;     // Channel 2
+
+    // Ch0 LUT0 out to TCB0 event in
+    EVSYS.CHANNEL0 = EVSYS_CHANNEL0_CCL_LUT0_gc;
+    EVSYS.USERTCB0CAPT = 1;     // Channel 0
+
+#else
+#error "Invalid XDIR_PORT_ID configuration"
+#endif
+
+    // Ch1 AC1 out to TCB2 event in
+    EVSYS.CHANNEL1 = EVSYS_CHANNEL1_AC1_OUT_gc;
+    EVSYS.USERTCB2CAPT = 2;     // Channel 1
 
     // Ch3 TCB0 CAPT to LUT2 EventA
     EVSYS.CHANNEL3 = EVSYS_CHANNEL3_TCB0_CAPT_gc;

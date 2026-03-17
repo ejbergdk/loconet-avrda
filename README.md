@@ -33,6 +33,8 @@ LNMONITOR | Write all received LocoNet data on debug shell
 LNECHO | Receive and process the echo of data sent from the library itself
 LNPACKET_SIZE_MAX | Use small LN packets to conserve memory. Full packet size is used if not set
 LNPACKET_CNT | Number of LN packets in RAM. Defaults to 8 if not set
+XDIR_PORT and XDIR_PORT_ID | Port to use for XDIR. See configuration.h for details
+XDIR_PIN | Pin to use for XDIR. See configuration.h for details
 
 And of course F_CPU should always be defined to the AVR's clock speed (in Hz).
 This code has only been tested with the AVR running at 24 MHz.
