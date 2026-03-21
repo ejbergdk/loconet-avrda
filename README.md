@@ -9,6 +9,9 @@ See my other repositories for examples:
 [loconet-avrda-demo](https://github.com/ejbergdk/loconet-avrda-demo) is a small demonstration using this library.  
 [loconet-routectrl3](https://github.com/ejbergdk/loconet-routectrl3) is a larger project, that can be used to control train routes.
 
+Documentation is (finally) being written, and available in the repository [wiki](https://github.com/ejbergdk/loconet-avrda/wiki).  
+It isn't done yet, but the description below will be moved to the wiki soon.
+
 `hal_ln.*` and `ln_def.h` are the main library files you will be needing.  
 Include `hal_ln.h` in your main file, and call `hal_ln_init();` once when starting up, before global interrupts are enabled. Then call `hal_ln_update();` from your mainloop.  
 You can now either use the functions described in `hal_ln.h` directly to send and receive raw Loconet packets, or use the helper functions in `ln_rx.*` and `ln_tx.*` for easier receiving and transmitting of packets.
@@ -40,4 +43,4 @@ And of course F_CPU should always be defined to the AVR's clock speed (in Hz).
 This code has only been tested with the AVR running at 24 MHz.
 Slower clock speeds should be possible, but it's not guaranteed.
 
-Yes, I know. Documentation is scarce right now. Work is in progress.
+Yes, I know. Documentation is somewhat scarce right now. The wiki page has been started.
