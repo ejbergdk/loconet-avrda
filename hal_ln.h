@@ -46,9 +46,10 @@ extern void     hal_ln_update(void);
 /**
  * Get pointer to an available LocoNet packet.
  *
- * The LocoNet packet is not empty, but may contain data from earlier use.
+ * The LocoNet packet is free to use as you wish, but may contain old data
+ * from earlier use. Do not assume it is all zeros.
  * After use, the packet must be freed by either using hal_ln_packet_free,
- * or sending it on to another function that eventually frees it.
+ * or sending it on to another function that eventually frees it, like hal_ln_send.
  *
  * @return Pointer to LocoNet packet, or NULL if none is available.
  */
@@ -60,6 +61,13 @@ extern lnpacket_t *hal_ln_packet_get(void);
  * @param p Pointer to LocoNet packet to free.
  */
 extern void     hal_ln_packet_free(lnpacket_t *p);
+
+/**
+ * Return the number of LocoNet packets that are available (free) to use.
+ *
+ * @return Number of available packets.
+ */
+extern uint8_t  hal_ln_packets_available(void);
 
 /**
  * Length of LocoNet packet.
@@ -100,6 +108,13 @@ extern void     hal_ln_send(lnpacket_t *lnpacket, hal_ln_tx_done_cb_t * cb, void
  * @return Pointer to received LocoNet packet, or NULL if none is available.
  */
 extern lnpacket_t *hal_ln_receive(void);
+
+/**
+ * Return the number of LocoNet packets that are waiting in the receive queue.
+ *
+ * @return Number of packets in receive queue.
+ */
+extern uint8_t  hal_ln_packets_in_rx_queue(void);
 
 /**
  * Get tx collision status.

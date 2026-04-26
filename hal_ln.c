@@ -108,6 +108,11 @@ void hal_ln_packet_free(lnpacket_t *p)
     fifo_queue_put(&queue_free, &packet->fifo);
 }
 
+uint8_t hal_ln_packets_available(void)
+{
+    return fifo_queue_size(&queue_free);
+}
+
 uint8_t hal_ln_packet_len(const lnpacket_t *p)
 {
     switch (p->hdr.op & 0x60)
@@ -509,6 +514,11 @@ lnpacket_t     *hal_ln_receive(void)
     if (p)
         return &PACKET_FROM_FIFO(p)->lndata;
     return NULL;
+}
+
+uint8_t hal_ln_packets_in_rx_queue(void)
+{
+    return fifo_queue_size(&queue_rx);
 }
 
 
