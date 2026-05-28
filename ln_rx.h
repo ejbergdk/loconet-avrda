@@ -19,6 +19,7 @@ extern void     ln_rx_opc_input_rep(uint16_t adr, uint8_t l, uint8_t x);
 extern void     ln_rx_opc_long_ack(uint8_t lopc, uint8_t ack1);
 extern void     ln_rx_opc_sw_state(uint16_t adr, uint8_t dir, uint8_t on);
 extern void     ln_rx_opc_sw_ack(uint16_t adr, uint8_t dir, uint8_t on);
+extern void     ln_rx_opc_loco_adr(uint16_t adr);
 
 extern void     ln_rx_opc_unknown(const lnpacket_t *p);
 

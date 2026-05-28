@@ -19,5 +19,6 @@ extern int8_t   ln_tx_opc_input_rep(uint16_t adr, bool l, hal_ln_tx_done_cb_t * 
 extern int8_t   ln_tx_opc_sw_rep_input(uint16_t adr, bool l, bool i, hal_ln_tx_done_cb_t * cb, void *ctx);
 extern int8_t   ln_tx_opc_sw_rep_output(uint16_t adr, bool t, bool c, hal_ln_tx_done_cb_t * cb, void *ctx);
 extern int8_t   ln_tx_opc_long_ack(uint8_t lopc, uint8_t ack1, hal_ln_tx_done_cb_t * cb, void *ctx);
+extern int8_t   ln_tx_opc_loco_adr(uint16_t adr, hal_ln_tx_done_cb_t * cb, void *ctx);
 
 #endif /* LN_TX_H_ */

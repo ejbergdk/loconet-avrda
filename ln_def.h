@@ -197,8 +197,8 @@ typedef struct
 typedef struct
 {
     uint8_t         op;
-    uint8_t         zero;
-    uint8_t         adr;
+    uint8_t         adrh;
+    uint8_t         adrl;
 } lnpacket_loco_adr_t;
 
 /*

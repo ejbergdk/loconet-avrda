@@ -128,6 +128,10 @@ void ln_rx_update(void)
         ln_rx_opc_sw_ack(adr, p->sw.dir, p->sw.on);
         break;
 
+    case OPC_LOCO_ADR:
+        ln_rx_opc_loco_adr(p->loco_adr.adrl | (p->loco_adr.adrh << 7));
+        break;
+
         // Still missing more OPC's here
 
     default:
@@ -193,6 +197,13 @@ void ln_rx_opc_sw_ack(uint16_t adr, uint8_t dir, uint8_t on)
 #endif
 }
 
+__attribute__((weak))
+void ln_rx_opc_loco_adr(uint16_t adr)
+{
+#ifdef LNMONITOR
+    printf_P(PSTR("  adr %u\n"), adr);
+#endif
+}
 
 
 __attribute__((weak))
