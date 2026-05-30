@@ -115,3 +115,18 @@ int8_t ln_tx_opc_long_ack(uint8_t lopc, uint8_t ack1, hal_ln_tx_done_cb_t * cb, 
 
     return 0;
 }
+
+int8_t ln_tx_opc_loco_adr(uint16_t adr, hal_ln_tx_done_cb_t * cb, void *ctx)
+{
+    lnpacket_t     *p = hal_ln_packet_get();
+
+    if (!p)
+        return -1;
+
+    p->loco_adr.op = OPC_LOCO_ADR;
+    p->loco_adr.adrh = (adr >> 7) & 0x7f;
+    p->loco_adr.adrl = adr & 0x7f;
+    hal_ln_send(p, cb, ctx);
+
+    return 0;
+}
